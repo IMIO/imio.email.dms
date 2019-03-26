@@ -40,6 +40,7 @@ setup(
         'setuptools',
         'docopt',
         'zc.lockfile',
+        'imio.email.parser',
     ],
     extras_require={
     },
