@@ -19,9 +19,7 @@ import os
 import zc.lockfile
 
 
-def get_mailbox_infos(config_filename):
-    config = configparser.ConfigParser()
-    config.read(config_filename)
+def get_mailbox_infos(config):
     mailbox_infos = config["mailbox"]
     host = mailbox_infos["host"]
     port = mailbox_infos["port"]
@@ -31,26 +29,26 @@ def get_mailbox_infos(config_filename):
     return host, port, ssl, login, password
 
 
-def get_preview_pdf_path(config_filename, mail_id):
-    config = configparser.ConfigParser()
-    config.read(config_filename)
-    mailbox_infos = config["mailinfos"]
-    output_dir = mailbox_infos["pdf-output-dir"]
-    filename = "{0}.pdf".format(mail_id.decode('UTF-8'))
+def get_preview_pdf_path(config, mail_id):
+    mail_infos = config["mailinfos"]
+    output_dir = mail_infos["pdf-output-dir"]
+    filename = "{0}.pdf".format(mail_id.decode("UTF-8"))
     return os.path.join(output_dir, filename)
 
 
 def process_mails():
     arguments = docopt(__doc__)
+    config = configparser.ConfigParser()
     config_file = arguments["FILE"]
-    host, port, ssl, login, password = get_mailbox_infos(config_file)
+    config.read(config_file)
+    host, port, ssl, login, password = get_mailbox_infos(config)
     lock = zc.lockfile.LockFile("lock")
     fetcher = IMAPEmailFetcher()
     fetcher.connect(host, port, ssl, login, password)
     for mail_info in fetcher.get_unread_emails():
         mail_id = mail_info.id
         mail = mail_info.mail
-        pdf_path = get_preview_pdf_path(config_file, mail_id)
+        pdf_path = get_preview_pdf_path(config, mail_id)
         try:
             parser = Parser(mail)
             headers = parser.headers
