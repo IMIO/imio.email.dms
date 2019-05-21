@@ -1,27 +1,36 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails [-h] FILE
+Usage: process_mails [-h] FILE [--requeue_errors]
 
 Arguments:
     FILE         config file
 
 Options:
-    -h --help
+    -h --help           Show this screen.
+    --requeue_errors    Put email in error status back in waiting for processing
 """
 from datetime import datetime
 from docopt import docopt
 from hashlib import md5
-from io import BytesIO
-from imio.email.dms.fetcher import IMAPEmailFetcher
+from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.parser.parser import Parser
+from io import BytesIO
 from pathlib import Path
 import configparser
 import json
+import logging
 import os
 import requests
+import sys
 import tarfile
 import zc.lockfile
+
+logger = logging.getLogger("imio.email.dms")
+logger.setLevel(logging.INFO)
+chandler = logging.StreamHandler()
+chandler.setLevel(logging.INFO)
+logger.addHandler(chandler)
 
 
 def get_mailbox_infos(config):
@@ -118,23 +127,39 @@ def process_mails():
 
     host, port, ssl, login, password = get_mailbox_infos(config)
     lock = zc.lockfile.LockFile("lock_{0}".format(config['webservice']['client_id']))
-    fetcher = IMAPEmailFetcher()
-    fetcher.connect(host, port, ssl, login, password)
 
-    for mail_info in fetcher.get_unread_emails():
+    handler = IMAPEmailHandler()
+    handler.connect(host, port, ssl, login, password)
+
+    if arguments.get("--requeue_errors"):
+        amount = handler.reset_errors()
+        logger.info("{} emails in error were put back in waiting state".format(amount))
+        handler.disconnect()
+        lock.close()
+        sys.exit()
+
+    imported = errors = 0
+    for mail_info in handler.get_waiting_emails():
         mail_id = mail_info.id
         mail = mail_info.mail
         pdf_path = get_preview_pdf_path(config, mail_id)
         try:
             parser = Parser(mail)
             headers = parser.headers
-            print(headers)
             attachments = parser.attachments
-            print([a['filename'] for a in attachments])
             parser.generate_pdf(pdf_path)
             send_to_ws(config, headers, pdf_path, attachments)
-            fetcher.mark_mail_as_read(mail_id)
-        except:
-            fetcher.mark_mail_as_error(mail_id)
-    fetcher.disconnect()
+            handler.mark_mail_as_imported(mail_id)
+            imported += 1
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            handler.mark_mail_as_error(mail_id)
+            errors += 1
+
+    logger.info(
+        "{} emails have been imported. {} emails have caused an error.".format(
+            imported, errors
+        )
+    )
+    handler.disconnect()
     lock.close()
