@@ -8,10 +8,31 @@ This package ensures the import of incoming emails into DMS.
 Features
 --------
 
- 1. fetch unread emails from IMAP mailbox
- 2. parse emails
- 3. send informations to dms webservice
- 4. mark emails as read
+1. fetch waiting emails from IMAP mailbox
+2. parse emails (headers, attachments, ...)
+3. generate a PDF email preview
+4. send informations to DMS webservice
+5. mark emails as imported
+
+
+Usage
+-----
+
+To process emails, you can execute ::
+
+ bin/process_mails config.ini
+
+See `config.ini` file for various parameters.
+
+
+Errors
+------
+
+In case the importation process fails, the corresponding emails are marked as
+errors and are not taken into account anymore.
+To process them again, you can execute ::
+
+ bin/process_mails config.ini --requeue_errors
 
 
 Contribute
