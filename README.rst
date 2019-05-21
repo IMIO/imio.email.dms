@@ -30,6 +30,7 @@ Errors
 
 In case the importation process fails, the corresponding emails are marked as
 errors and are not taken into account anymore.
+An email notification is sent with the problematic email attached.
 To process them again, you can execute ::
 
  bin/process_mails config.ini --requeue_errors

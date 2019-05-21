@@ -12,11 +12,15 @@ Options:
 """
 from datetime import datetime
 from docopt import docopt
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.parser.parser import Parser
 from io import BytesIO
 from pathlib import Path
+from smtplib import SMTP
 import configparser
 import json
 import logging
@@ -31,6 +35,40 @@ logger.setLevel(logging.INFO)
 chandler = logging.StreamHandler()
 chandler.setLevel(logging.INFO)
 logger.addHandler(chandler)
+
+
+ERROR_MAIL = u"""
+Problematic mail is attached.\n
+Client ID : {}
+IMAP login : {}\n
+Corresponding exception : {}\n\n
+Sorry !\n
+"""
+
+
+def notify(config, mail, error):
+    client_id = config["webservice"]["client_id"]
+    login = config["mailbox"]["login"]
+    smtp_infos = config["smtp"]
+    sender = smtp_infos["sender"]
+    recipient = smtp_infos["recipient"]
+
+    msg = MIMEMultipart()
+    msg["Subject"] = "Error handling an email for client {}".format(client_id)
+    msg["From"] = sender
+    msg["To"] = recipient
+
+    main_text = MIMEText(ERROR_MAIL.format(client_id, login, error), "plain")
+    msg.attach(main_text)
+
+    attachment = MIMEBase("message", "rfc822")
+    attachment.set_payload(mail.as_string())
+    attachment.add_header("Content-Disposition", "inline")
+    msg.attach(attachment)
+
+    smtp = SMTP(smtp_infos["host"], smtp_infos["port"])
+    smtp.sendmail(sender, recipient, msg.as_string().encode("utf8"))
+    smtp.quit()
 
 
 def get_mailbox_infos(config):
@@ -153,6 +191,7 @@ def process_mails():
             imported += 1
         except Exception as e:
             logger.error(e, exc_info=True)
+            notify(config, mail, e)
             handler.mark_mail_as_error(mail_id)
             errors += 1
 
