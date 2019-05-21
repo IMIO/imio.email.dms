@@ -19,7 +19,6 @@ fake-eggs/
 include/
 parts/
 dist/
-src/
 var/
 ### Python template
 # Byte-compiled / optimized / DLL files
