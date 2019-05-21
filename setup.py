@@ -41,6 +41,7 @@ setup(
         'docopt',
         'zc.lockfile',
         'imio.email.parser',
+        'requests',
     ],
     extras_require={
     },
