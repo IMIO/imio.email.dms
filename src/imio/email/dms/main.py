@@ -150,9 +150,10 @@ def send_to_ws(config, headers, pdf_path, attachments):
         client_id=client_id,
         id=response_id,
     )
+    files = {'filedata': ('archive.tar', tar_content, 'application/tar', {'Expires': '0'})}
     upload_req = requests.post(upload_url,
                                auth=auth,
-                               data={"filedata": tar_content})
+                               files=files)
 
     external_id_path.write_text(str(external_id))
 
