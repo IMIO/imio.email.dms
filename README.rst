@@ -36,6 +36,13 @@ To process them again, you can execute ::
  bin/process_mails config.ini --requeue_errors
 
 
+
+Requirements
+------------
+
+package wkhtmltopdf
+
+
 Contribute
 ----------
 
