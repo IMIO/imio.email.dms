@@ -3,6 +3,7 @@
 import email
 import imaplib
 import logging
+import six
 
 logger = logging.getLogger("imio.email.dms")
 
@@ -34,7 +35,7 @@ class IMAPEmailHandler(object):
 
     def reset_errors(self):
         """Fetch all messages in error status and put them back in waiting"""
-        res, data = self.connection.search(None, "KEYWORD error")
+        res, data = self.connection.search(None, u"KEYWORD error")
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
@@ -46,7 +47,7 @@ class IMAPEmailHandler(object):
 
     def get_waiting_emails(self):
         """Fetch all waiting messages"""
-        res, data = self.connection.search(None, "NOT KEYWORD imported")
+        res, data = self.connection.search(None, u"NOT KEYWORD imported")
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
@@ -58,7 +59,9 @@ class IMAPEmailHandler(object):
                 continue
             if not self.should_handle(mail_id):
                 continue
-            mail_body = mail_data[0][1].decode("utf-8")
+            mail_body = mail_data[0][1]
+            if six.PY3:
+                mail_body = mail_body.decode("utf-8")
             mail = email.message_from_string(mail_body)
             mail_infos = MailData(mail_id, mail)
             waiting.append(mail_infos)

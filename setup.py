@@ -41,7 +41,9 @@ setup(
         'docopt',
         'zc.lockfile',
         'imio.email.parser',
+        'pathlib2;python_version<"3.0"',
         'requests',
+        'six',
     ],
     extras_require={
     },

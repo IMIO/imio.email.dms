@@ -19,16 +19,21 @@ from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.parser.parser import Parser
 from io import BytesIO
-from pathlib import Path
 from smtplib import SMTP
 import configparser
 import json
 import logging
 import os
 import requests
+import six
 import sys
 import tarfile
 import zc.lockfile
+
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
 
 logger = logging.getLogger("imio.email.dms")
 logger.setLevel(logging.INFO)
@@ -66,15 +71,16 @@ def notify(config, mail, error):
     attachment.add_header("Content-Disposition", "inline")
     msg.attach(attachment)
 
-    smtp = SMTP(smtp_infos["host"], smtp_infos["port"])
-    smtp.sendmail(sender, recipient, msg.as_string().encode("utf8"))
+    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
+    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
+    smtp.sendmail(sender, recipient, msg_content)
     smtp.quit()
 
 
 def get_mailbox_infos(config):
     mailbox_infos = config["mailbox"]
-    host = mailbox_infos["host"]
-    port = mailbox_infos["port"]
+    host = str(mailbox_infos["host"])
+    port = int(mailbox_infos["port"])
     ssl = mailbox_infos["ssl"] == "true" and True or False
     login = mailbox_infos["login"]
     password = mailbox_infos["pass"]
@@ -100,7 +106,7 @@ def send_to_ws(config, headers, pdf_path, attachments):
         external_id = 1
 
     tar_path = Path('/tmp') / '{}.tar'.format(external_id)
-    with tarfile.open(tar_path, "w") as tar:
+    with tarfile.open(str(tar_path), "w") as tar:
         # 1) email pdf printout
         pdf_contents = Path(pdf_path).open('rb').read()
         pdf_info = tarfile.TarInfo(name='email.pdf')
@@ -108,7 +114,7 @@ def send_to_ws(config, headers, pdf_path, attachments):
         tar.addfile(tarinfo=pdf_info, fileobj=BytesIO(pdf_contents))
 
         # 2) metadata.json
-        metadata_contents = json.dumps(headers).encode("utf8")
+        metadata_contents = json.dumps(headers).encode("utf8") if six.PY3 else json.dumps(headers)
         metadata_info = tarfile.TarInfo(name='metadata.json')
         metadata_info.size = len(metadata_contents)
         tar.addfile(tarinfo=metadata_info, fileobj=BytesIO(metadata_contents))
@@ -155,7 +161,8 @@ def send_to_ws(config, headers, pdf_path, attachments):
                                auth=auth,
                                files=files)
 
-    external_id_path.write_text(str(external_id))
+    external_id_txt = str(external_id) if six.PY3 else str(external_id).decode()
+    external_id_path.write_text(external_id_txt)
 
 
 def process_mails():
