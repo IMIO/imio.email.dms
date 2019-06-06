@@ -44,6 +44,7 @@ setup(
         'pathlib2;python_version<"3.0"',
         'requests',
         'six',
+        'configparser',
     ],
     extras_require={
     },
