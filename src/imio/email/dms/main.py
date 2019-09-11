@@ -50,8 +50,28 @@ Corresponding exception : {}\n\n
 Sorry !\n
 """
 
+UNSUPPORTED_ORIGIN_EMAIL = u"""
+Dear user,
 
-def notify(config, mail, error):
+The attached email has been refused because it wasn't sent to us as an attachment.\n
+\n
+Please try again, by following one of these methods.\n
+\n
+If you are using Microsoft Outlook:\n
+- In the ribbon, click on the More dropdown button next to the standard Forward button\n
+- Choose Forward as Attachment\n
+- Send the opened draft to the GED import address.\n 
+\n
+If you are using Mozilla Thunderbird:\n
+- Open the email you want to import into the GED.\n
+- Click on the menu Message > Forward As > Attachment.\n
+- Send the opened draft to the GED import address.\n
+\n
+Please excuse us for the inconvenience.\n
+"""
+
+
+def notify_exception(config, mail, error):
     client_id = config["webservice"]["client_id"]
     login = config["mailbox"]["login"]
     smtp_infos = config["smtp"]
@@ -74,6 +94,29 @@ def notify(config, mail, error):
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
     smtp.sendmail(sender, recipient, msg_content)
+    smtp.quit()
+
+
+def notify_unsupported_origin(config, mail, from_):
+    smtp_infos = config["smtp"]
+    sender = smtp_infos["sender"]
+
+    msg = MIMEMultipart()
+    msg["Subject"] = "Error importing an email into the GED"
+    msg["From"] = sender
+    msg["To"] = from_
+
+    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL, "plain")
+    msg.attach(main_text)
+
+    attachment = MIMEBase("message", "rfc822")
+    attachment.set_payload(mail.as_string())
+    attachment.add_header("Content-Disposition", "inline")
+    msg.attach(attachment)
+
+    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
+    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
+    smtp.sendmail(sender, from_, msg_content)
     smtp.quit()
 
 
@@ -184,13 +227,19 @@ def process_mails():
         lock.close()
         sys.exit()
 
-    imported = errors = 0
+    imported = errors = unsupported = 0
     for mail_info in handler.get_waiting_emails():
         mail_id = mail_info.id
         mail = mail_info.mail
         pdf_path = get_preview_pdf_path(config, mail_id)
         try:
             parser = Parser(mail)
+            if parser.origin == 'Generic inbox':
+                mail_sender = parser.headers["From"][0][1]
+                notify_unsupported_origin(config, mail, mail_sender)
+                handler.mark_mail_as_unsupported(mail_id)
+                unsupported += 1
+                continue
             headers = parser.headers
             attachments = parser.attachments
             parser.generate_pdf(pdf_path)
@@ -199,13 +248,13 @@ def process_mails():
             imported += 1
         except Exception as e:
             logger.error(e, exc_info=True)
-            notify(config, mail, e)
+            notify_exception(config, mail, e)
             handler.mark_mail_as_error(mail_id)
             errors += 1
 
     logger.info(
-        "{} emails have been imported. {} emails have caused an error.".format(
-            imported, errors
+        "{} emails have been imported. {} email are unsupported. {} emails have caused an error.".format(
+            imported, unsupported, errors
         )
     )
     handler.disconnect()

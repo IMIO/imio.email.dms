@@ -47,7 +47,7 @@ class IMAPEmailHandler(object):
 
     def get_waiting_emails(self):
         """Fetch all waiting messages"""
-        res, data = self.connection.search(None, u"NOT KEYWORD imported")
+        res, data = self.connection.search(None, u"NOT KEYWORD imported", u"NOT KEYWORD unsupported")
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
@@ -73,7 +73,7 @@ class IMAPEmailHandler(object):
             logger.error("Unable to fetch flags for mail {0}".format(mail_id))
             return False
         flags = imaplib.ParseFlags(flags_data[0])
-        if b"imported" in flags or b"error" in flags:
+        if b"imported" in flags or b"error" in flags or b"unsupported" in flags:
             return False
         return True
 
@@ -92,3 +92,8 @@ class IMAPEmailHandler(object):
         """(Un)Mark 'error' / 'waiting' flags on specified mail"""
         self.connection.store(mail_id, "-FLAGS", "waiting")
         self.connection.store(mail_id, "+FLAGS", "error")
+
+    def mark_mail_as_unsupported(self, mail_id):
+        """(Un)Mark 'unsupported' / 'waiting' flags on specified mail"""
+        self.connection.store(mail_id, "-FLAGS", "waiting")
+        self.connection.store(mail_id, "+FLAGS", "unsupported")
