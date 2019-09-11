@@ -215,7 +215,8 @@ def process_mails():
     config.read(config_file)
 
     host, port, ssl, login, password = get_mailbox_infos(config)
-    lock = zc.lockfile.LockFile("lock_{0}".format(config['webservice']['client_id']))
+    lock_filepath = Path(config["webservice"]["counter_dir"]) / "lock_{0}".format(config['webservice']['client_id'])
+    lock = zc.lockfile.LockFile(lock_filepath)
 
     handler = IMAPEmailHandler()
     handler.connect(host, port, ssl, login, password)
