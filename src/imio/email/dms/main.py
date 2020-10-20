@@ -17,7 +17,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
-from imio.email.parser.parser import Parser
+from imio.email.parser.parser import Parser  # noqa
 from io import BytesIO
 from smtplib import SMTP
 import configparser
@@ -44,10 +44,10 @@ logger.addHandler(chandler)
 
 ERROR_MAIL = u"""
 Problematic mail is attached.\n
-Client ID : {}
-IMAP login : {}\n
-Corresponding exception : {}\n\n
-Sorry !\n
+Client ID : {0}
+IMAP login : {1}\n
+Corresponding exception : {2.__class__}
+{2.message}\n
 """
 
 UNSUPPORTED_ORIGIN_EMAIL = u"""
@@ -60,7 +60,7 @@ Please try again, by following one of these methods.\n
 If you are using Microsoft Outlook:\n
 - In the ribbon, click on the More dropdown button next to the standard Forward button\n
 - Choose Forward as Attachment\n
-- Send the opened draft to the GED import address.\n 
+- Send the opened draft to the GED import address.\n
 \n
 If you are using Mozilla Thunderbird:\n
 - Open the email you want to import into the GED.\n
@@ -69,6 +69,14 @@ If you are using Mozilla Thunderbird:\n
 \n
 Please excuse us for the inconvenience.\n
 """
+
+
+class DmsMetadataError(Exception):
+    """ The response from the webservice dms_metadata route is not successful """
+
+
+class FileUploadError(Exception):
+    """ The response from the webservice file_upload route is not successful """
 
 
 def notify_exception(config, mail, error):
@@ -102,7 +110,7 @@ def notify_unsupported_origin(config, mail, from_):
     sender = smtp_infos["sender"]
 
     msg = MIMEMultipart()
-    msg["Subject"] = "Error importing an email into the GED"
+    msg["Subject"] = "Error importing email into iA.docs"
     msg["From"] = sender
     msg["To"] = from_
 
@@ -141,13 +149,13 @@ def send_to_ws(config, headers, pdf_path, attachments):
     ws = config["webservice"]
     client_id = "{0}4{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
     counter_dir = Path(ws['counter_dir'])
-    counter_dir.mkdir(exist_ok=True)
-    external_id_path = counter_dir / client_id
-    if external_id_path.exists() and external_id_path.read_text():
-        external_id = int(external_id_path.read_text()) + 1
+    next_id_path = counter_dir / client_id
+    if next_id_path.exists() and next_id_path.read_text():
+        next_id = int(next_id_path.read_text()) + 1
     else:
-        external_id = 1
+        next_id = 1
 
+    external_id = "{0}{1:08d}".format(client_id, next_id)
     tar_path = Path('/tmp') / '{}.tar'.format(external_id)
     with tarfile.open(str(tar_path), "w") as tar:
         # 1) email pdf printout
@@ -172,7 +180,7 @@ def send_to_ws(config, headers, pdf_path, attachments):
     tar_content = tar_path.read_bytes()
     now = datetime.now()
     metadata = {
-        "external_id": "{0}{1:08d}".format(client_id, external_id),
+        "external_id": external_id,
         "client_id": client_id,
         "scan_date": now.strftime("%Y-%m-%d"),
         "scan_hour": now.strftime("%H:%M:%S"),
@@ -189,23 +197,25 @@ def send_to_ws(config, headers, pdf_path, attachments):
         ws=ws,
         client_id=client_id,
     )
-    metadata_req = requests.post(metadata_url,
-                                 auth=auth,
-                                 json=metadata)
+    metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
+    req_content = json.loads(metadata_req.content)
+    if not req_content['success'] or 'id' not in req_content:
+        msg = u"code: '{}', error: '{}', metadata: '{}'".format(req_content['error_code'], req_content['error'],
+                                                                metadata).encode('utf8')
+        raise DmsMetadataError(msg)
+    response_id = req_content['id']
 
-    response_id = json.loads(metadata_req.content)['id']
-    upload_url = 'http://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(
-        ws=ws,
-        client_id=client_id,
-        id=response_id,
-    )
+    upload_url = 'http://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(ws=ws, id=response_id)
     files = {'filedata': ('archive.tar', tar_content, 'application/tar', {'Expires': '0'})}
-    upload_req = requests.post(upload_url,
-                               auth=auth,
-                               files=files)
+    upload_req = requests.post(upload_url, auth=auth, files=files)
+    req_content = json.loads(upload_req.content)
+    if not req_content['success']:
+        msg = u"code: '{}', error: '{}'".format(req_content['error_code'], req_content.get('error') or
+                                                req_content['message']).encode('utf8')
+        raise FileUploadError(msg)
 
-    external_id_txt = str(external_id) if six.PY3 else str(external_id).decode()
-    external_id_path.write_text(external_id_txt)
+    next_id_txt = str(next_id) if six.PY3 else str(next_id).decode()
+    next_id_path.write_text(next_id_txt)
 
 
 def process_mails():
@@ -215,8 +225,10 @@ def process_mails():
     config.read(config_file)
 
     host, port, ssl, login, password = get_mailbox_infos(config)
-    lock_filepath = Path(config["webservice"]["counter_dir"]) / "lock_{0}".format(config['webservice']['client_id'])
-    lock = zc.lockfile.LockFile(lock_filepath)
+    counter_dir = Path(config["webservice"]["counter_dir"])
+    counter_dir.mkdir(exist_ok=True)
+    lock_filepath = counter_dir / "lock_{0}".format(config['webservice']['client_id'])
+    lock = zc.lockfile.LockFile(lock_filepath.as_posix())
 
     handler = IMAPEmailHandler()
     handler.connect(host, port, ssl, login, password)
