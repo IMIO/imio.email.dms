@@ -201,9 +201,9 @@ def send_to_ws(config, headers, pdf_path, attachments, mail_id):
     metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
     req_content = json.loads(metadata_req.content)
     if not req_content['success'] or 'id' not in req_content:
-        msg = u"code: '{}', error: '{}', metadata: '{}', mail_id: {}".format(req_content['error_code'],
+        msg = u"mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(mail_id, req_content['error_code'],
                                                                              req_content['error'],
-                                                                             metadata, mail_id).encode('utf8')
+                                                                             metadata).encode('utf8')
         raise DmsMetadataError(msg)
     response_id = req_content['id']
 
@@ -212,8 +212,9 @@ def send_to_ws(config, headers, pdf_path, attachments, mail_id):
     upload_req = requests.post(upload_url, auth=auth, files=files)
     req_content = json.loads(upload_req.content)
     if not req_content['success']:
-        msg = u"code: '{}', error: '{}', mail_id: {}".format(req_content['error_code'], req_content.get('error') or
-                                                             req_content['message'], mail_id).encode('utf8')
+        msg = u"mail_id: {}, code: '{}', error: '{}'".format(mail_id, req_content['error_code'],
+                                                             req_content.get('error') or
+                                                             req_content['message']).encode('utf8')
         raise FileUploadError(msg)
 
     next_id_txt = str(next_id) if six.PY3 else str(next_id).decode()
