@@ -147,7 +147,7 @@ def get_preview_pdf_path(config, mail_id):
 
 def send_to_ws(config, headers, pdf_path, attachments):
     ws = config["webservice"]
-    client_id = "{0}4{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
+    client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
     counter_dir = Path(ws['counter_dir'])
     next_id_path = counter_dir / client_id
     if next_id_path.exists() and next_id_path.read_text():
