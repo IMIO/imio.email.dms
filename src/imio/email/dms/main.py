@@ -145,7 +145,7 @@ def get_preview_pdf_path(config, mail_id):
     return os.path.join(output_dir, filename)
 
 
-def send_to_ws(config, headers, pdf_path, attachments):
+def send_to_ws(config, headers, pdf_path, attachments, mail_id):
     ws = config["webservice"]
     client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
     counter_dir = Path(ws['counter_dir'])
@@ -200,8 +200,9 @@ def send_to_ws(config, headers, pdf_path, attachments):
     metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
     req_content = json.loads(metadata_req.content)
     if not req_content['success'] or 'id' not in req_content:
-        msg = u"code: '{}', error: '{}', metadata: '{}'".format(req_content['error_code'], req_content['error'],
-                                                                metadata).encode('utf8')
+        msg = u"code: '{}', error: '{}', metadata: '{}', mail_id: {}".format(req_content['error_code'],
+                                                                             req_content['error'],
+                                                                             metadata, mail_id).encode('utf8')
         raise DmsMetadataError(msg)
     response_id = req_content['id']
 
@@ -210,8 +211,8 @@ def send_to_ws(config, headers, pdf_path, attachments):
     upload_req = requests.post(upload_url, auth=auth, files=files)
     req_content = json.loads(upload_req.content)
     if not req_content['success']:
-        msg = u"code: '{}', error: '{}'".format(req_content['error_code'], req_content.get('error') or
-                                                req_content['message']).encode('utf8')
+        msg = u"code: '{}', error: '{}', mail_id: {}".format(req_content['error_code'], req_content.get('error') or
+                                                             req_content['message'], mail_id).encode('utf8')
         raise FileUploadError(msg)
 
     next_id_txt = str(next_id) if six.PY3 else str(next_id).decode()
@@ -256,7 +257,7 @@ def process_mails():
             headers = parser.headers
             attachments = parser.attachments
             parser.generate_pdf(pdf_path)
-            send_to_ws(config, headers, pdf_path, attachments)
+            send_to_ws(config, headers, pdf_path, attachments, mail_id)
             handler.mark_mail_as_imported(mail_id)
             imported += 1
         except Exception as e:
