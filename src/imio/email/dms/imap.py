@@ -77,6 +77,32 @@ class IMAPEmailHandler(object):
             return False
         return True
 
+    def list_last_emails(self, nb=20):
+        """List last messages"""
+        res, data = self.connection.search(None, 'ALL')
+        if res != "OK":
+            logger.error("Unable to fetch mails")
+            return []
+        lst = []
+        parser = email.parser.HeaderParser()
+        for mail_id in data[0].split()[-nb:]:
+            res, flags_data = self.connection.fetch(mail_id, '(FLAGS)')
+            if res != "OK":
+                logger.error("Unable to fetch flags for mail {0}".format(mail_id))
+                continue
+            flags = imaplib.ParseFlags(flags_data[0])
+            res, header_data = self.connection.fetch(mail_id, '(BODY[HEADER])')
+            if res != "OK":
+                logger.error("Unable to fetch body header for mail {0}".format(mail_id))
+                continue
+            msg = parser.parsestr(header_data[0][1])
+            subject, encoding = email.Header.decode_header(msg['Subject'])[0]
+            if encoding and encoding.lower() not in ('utf8', 'utf-8'):
+                subject = subject.decode(encoding).encode('utf8')
+            lst.append("{}: '{}', {}".format(mail_id, subject, flags))
+            logger.info(lst[-1])
+        return lst
+
     def mark_reset_error(self, mail_id):
         """Reset 'error' / 'waiting' flags on specified mail"""
         self.connection.store(mail_id, "-FLAGS", "imported")

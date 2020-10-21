@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails [-h] FILE [--requeue_errors]
+Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails]
 
 Arguments:
     FILE         config file
@@ -9,6 +9,7 @@ Arguments:
 Options:
     -h --help           Show this screen.
     --requeue_errors    Put email in error status back in waiting for processing
+    --list_emails       List last 20 emails
 """
 from datetime import datetime
 from docopt import docopt
@@ -237,6 +238,11 @@ def process_mails():
     if arguments.get("--requeue_errors"):
         amount = handler.reset_errors()
         logger.info("{} emails in error were put back in waiting state".format(amount))
+        handler.disconnect()
+        lock.close()
+        sys.exit()
+    if arguments.get("--list_emails"):
+        handler.list_last_emails()
         handler.disconnect()
         lock.close()
         sys.exit()
