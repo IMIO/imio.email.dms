@@ -244,6 +244,8 @@ def process_mails():
         sys.exit()
     if arguments.get("--list_emails"):
         handler.list_last_emails()
+        # import ipdb; ipdb.set_trace()
+        # handler.mark_reset_error('58')
         handler.disconnect()
         lock.close()
         sys.exit()
