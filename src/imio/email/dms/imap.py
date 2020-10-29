@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from imio.email.parser.parser import Parser  # noqa
+
 import email
 import imaplib
 import logging
@@ -84,22 +86,25 @@ class IMAPEmailHandler(object):
             logger.error("Unable to fetch mails")
             return []
         lst = []
-        parser = email.parser.HeaderParser()
         for mail_id in data[0].split()[-nb:]:
             res, flags_data = self.connection.fetch(mail_id, '(FLAGS)')
             if res != "OK":
                 logger.error("Unable to fetch flags for mail {0}".format(mail_id))
                 continue
             flags = imaplib.ParseFlags(flags_data[0])
-            res, header_data = self.connection.fetch(mail_id, '(BODY[HEADER])')
+            res, mail_data = self.connection.fetch(mail_id, '(RFC822)')
             if res != "OK":
                 logger.error("Unable to fetch body header for mail {0}".format(mail_id))
                 continue
-            msg = parser.parsestr(header_data[0][1])
-            subject, encoding = email.Header.decode_header(msg['Subject'])[0]
-            if encoding and encoding.lower() not in ('utf8', 'utf-8'):
-                subject = subject.decode(encoding).encode('utf8')
-            lst.append("{}: '{}', {}".format(mail_id, subject, flags))
+            mail_body = mail_data[0][1]
+            if six.PY3:
+                mail_body = mail_body.decode("utf-8")
+            mail = email.message_from_string(mail_body)
+            parser = Parser(mail)
+            if isinstance(mail_id, bytes):
+                mail_id = mail_id.decode()
+                flags = [fl.decode() for fl in flags]
+            lst.append("{}: '{}', {}".format(mail_id, parser.headers['Subject'], flags))
             logger.info(lst[-1])
         return lst
 
