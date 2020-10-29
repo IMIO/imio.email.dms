@@ -20,6 +20,8 @@ include/
 parts/
 dist/
 var/
+.plone.versioncheck.tracked.json
+checkversion.html
 ### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/

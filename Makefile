@@ -10,3 +10,7 @@ process:
 
 build-docker:
 	docker build -t $(image_name) .
+
+.PHONY: vc
+vc:
+	bin/versioncheck -rbo checkversion.html
