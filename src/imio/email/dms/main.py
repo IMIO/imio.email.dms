@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails]
+Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]
 
 Arguments:
     FILE         config file
@@ -10,6 +10,7 @@ Options:
     -h --help           Show this screen.
     --requeue_errors    Put email in error status back in waiting for processing
     --list_emails       List last 20 emails
+    --get_eml=<mail_id> Get eml of email id
 """
 from datetime import datetime
 from docopt import docopt
@@ -246,6 +247,14 @@ def process_mails():
         handler.list_last_emails()
         # import ipdb; ipdb.set_trace()
         # handler.mark_reset_error('58')
+        handler.disconnect()
+        lock.close()
+        sys.exit()
+    if arguments.get("--get_eml"):
+        if not arguments['--get_eml']:
+            logger.error('Error: you must give an email id (--get_eml=25 by example)')
+        handler.get_mail(arguments['--get_eml'])
+        # TO BE CONTINUED
         handler.disconnect()
         lock.close()
         sys.exit()

@@ -47,6 +47,15 @@ class IMAPEmailHandler(object):
             self.mark_reset_error(mail_id)
         return amount
 
+    def get_mail(self, mail_id):
+        res, mail_data = self.connection.fetch(mail_id, "(RFC822)")
+        if res != "OK":
+            logger.error("Unable to fetch mail {0}".format(mail_id))
+            return None
+        mail_body = mail_data[0][1]
+        mail = email.message_from_string(mail_body)
+        return mail
+
     def get_waiting_emails(self):
         """Fetch all waiting messages"""
         res, data = self.connection.search(None, u"NOT KEYWORD imported", u"NOT KEYWORD unsupported")
