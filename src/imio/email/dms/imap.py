@@ -48,11 +48,13 @@ class IMAPEmailHandler(object):
         return amount
 
     def get_mail(self, mail_id):
-        res, mail_data = self.connection.fetch(mail_id, "(RFC822)")
+        res, mail_data = self.connection.fetch(mail_id, '(RFC822)')
         if res != "OK":
             logger.error("Unable to fetch mail {0}".format(mail_id))
             return None
         mail_body = mail_data[0][1]
+        if six.PY3:
+            mail_body = mail_body.decode("utf-8")
         mail = email.message_from_string(mail_body)
         return mail
 
@@ -64,16 +66,9 @@ class IMAPEmailHandler(object):
             return []
         waiting = []
         for mail_id in data[0].split():
-            res, mail_data = self.connection.fetch(mail_id, "(RFC822)")
-            if res != "OK":
-                logger.error("Unable to fetch mail {0}".format(mail_id))
+            mail = self.get_mail(mail_id)
+            if not mail:
                 continue
-            if not self.should_handle(mail_id):
-                continue
-            mail_body = mail_data[0][1]
-            if six.PY3:
-                mail_body = mail_body.decode("utf-8")
-            mail = email.message_from_string(mail_body)
             mail_infos = MailData(mail_id, mail)
             waiting.append(mail_infos)
         return waiting
@@ -101,14 +96,9 @@ class IMAPEmailHandler(object):
                 logger.error("Unable to fetch flags for mail {0}".format(mail_id))
                 continue
             flags = imaplib.ParseFlags(flags_data[0])
-            res, mail_data = self.connection.fetch(mail_id, '(RFC822)')
-            if res != "OK":
-                logger.error("Unable to fetch body header for mail {0}".format(mail_id))
+            mail = self.get_mail(mail_id)
+            if not mail:
                 continue
-            mail_body = mail_data[0][1]
-            if six.PY3:
-                mail_body = mail_body.decode("utf-8")
-            mail = email.message_from_string(mail_body)
             parser = Parser(mail)
             if isinstance(mail_id, bytes):
                 mail_id = mail_id.decode()

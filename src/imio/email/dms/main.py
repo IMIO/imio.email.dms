@@ -253,7 +253,10 @@ def process_mails():
     if arguments.get("--get_eml"):
         if not arguments['--get_eml']:
             logger.error('Error: you must give an email id (--get_eml=25 by example)')
-        handler.get_mail(arguments['--get_eml'])
+        mail = handler.get_mail(arguments['--get_eml'])
+        parser = Parser(mail)
+        # eml = parser.message
+        logger.info(parser.headers)
         # TO BE CONTINUED
         handler.disconnect()
         lock.close()
