@@ -17,6 +17,7 @@ from docopt import docopt
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email import generator
 from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.parser.parser import Parser  # noqa
@@ -254,10 +255,13 @@ def process_mails():
         if not arguments['--get_eml']:
             logger.error('Error: you must give an email id (--get_eml=25 by example)')
         mail = handler.get_mail(arguments['--get_eml'])
-        parser = Parser(mail)
-        # eml = parser.message
-        logger.info(parser.headers)
-        # TO BE CONTINUED
+        parsed = Parser(mail)
+        logger.info(parsed.headers)
+        filename='{}.eml'.format(parsed.headers['Subject'])
+        logger.info('Writing {} file'.format(filename))
+        with open(filename, 'w') as emlfile:
+            gen = generator.Generator(emlfile)
+            gen.flatten(parsed.message)
         handler.disconnect()
         lock.close()
         sys.exit()
