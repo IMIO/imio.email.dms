@@ -5,6 +5,7 @@
 *.tmp*
 *.mo
 *.egg
+*.eml
 *.EGG
 *.egg-info
 *.EGG-INFO
