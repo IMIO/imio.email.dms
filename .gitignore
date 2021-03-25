@@ -9,6 +9,7 @@
 *.EGG
 *.egg-info
 *.EGG-INFO
+*.pdf
 .*.cfg
 bin/
 build/
