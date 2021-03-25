@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]
+Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>]
 
 Arguments:
     FILE         config file
@@ -11,6 +11,7 @@ Options:
     --requeue_errors    Put email in error status back in waiting for processing
     --list_emails       List last 20 emails
     --get_eml=<mail_id> Get eml of email id
+    --gen_pdf=<mail_id> Generate pdf of email id
 """
 from datetime import datetime
 from docopt import docopt
@@ -244,20 +245,22 @@ def process_mails():
         handler.disconnect()
         lock.close()
         sys.exit()
-    if arguments.get("--list_emails"):
+    elif arguments.get("--list_emails"):
         handler.list_last_emails()
         # import ipdb; ipdb.set_trace()
         # handler.mark_reset_error('58')
         handler.disconnect()
         lock.close()
         sys.exit()
-    if arguments.get("--get_eml"):
-        if not arguments['--get_eml']:
+    elif arguments.get("--get_eml"):
+        mail_id = arguments['--get_eml']
+        if not mail_id:
             logger.error('Error: you must give an email id (--get_eml=25 by example)')
-        mail = handler.get_mail(arguments['--get_eml'])
+        mail = handler.get_mail(mail_id)
         parsed = Parser(mail)
         logger.info(parsed.headers)
-        filename='{}.eml'.format(parsed.headers['Subject'])
+        # filename='{}.eml'.format(parsed.headers['Subject'])
+        filename='{}.eml'.format(mail_id)
         logger.info('Writing {} file'.format(filename))
         with open(filename, 'w') as emlfile:
             gen = generator.Generator(emlfile)
@@ -265,6 +268,20 @@ def process_mails():
         handler.disconnect()
         lock.close()
         sys.exit()
+    elif arguments.get("--gen_pdf"):
+        mail_id = arguments['--gen_pdf']
+        if not mail_id:
+            logger.error('Error: you must give an email id (--gen_pdf=25 by example)')
+        mail = handler.get_mail(mail_id)
+        parsed = Parser(mail)
+        logger.info(parsed.headers)
+        pdf_path = get_preview_pdf_path(config, mail_id.encode('utf8'))
+        logger.info('Generating {} file'.format(pdf_path))
+        parsed.generate_pdf(pdf_path)
+        handler.disconnect()
+        lock.close()
+        sys.exit()
+
 
     imported = errors = unsupported = 0
     for mail_info in handler.get_waiting_emails():
