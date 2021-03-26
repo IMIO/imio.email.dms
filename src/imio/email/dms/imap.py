@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from imio.email.parser.parser import Parser  # noqa
+from mailparser import MailParser
 
 import email
 import imaplib
@@ -100,10 +101,12 @@ class IMAPEmailHandler(object):
             if not mail:
                 continue
             parser = Parser(mail)
+            parsed_orig_mail = MailParser(mail)
             if isinstance(mail_id, bytes):
                 mail_id = mail_id.decode()
                 flags = [fl.decode() for fl in flags]
-            lst.append(u"{}: '{}', {}".format(mail_id, parser.headers['Subject'], flags))
+            lst.append(u"{}: '{}', '{}', {}".format(mail_id, parsed_orig_mail.subject, parser.headers['Subject'],
+                                                    flags))
             logger.info(lst[-1])
         return lst
 
