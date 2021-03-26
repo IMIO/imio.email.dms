@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>]
+Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>] [--get_eml_orig]
 
 Arguments:
     FILE         config file
@@ -10,8 +10,9 @@ Options:
     -h --help           Show this screen.
     --requeue_errors    Put email in error status back in waiting for processing
     --list_emails       List last 20 emails
-    --get_eml=<mail_id> Get eml of email id
-    --gen_pdf=<mail_id> Generate pdf of email id
+    --get_eml=<mail_id> Get eml of original/contained email id
+    --get_eml_orig      Get eml of original email id (otherwise contained)
+    --gen_pdf=<mail_id> Generate pdf of contained email id
 """
 from datetime import datetime
 from docopt import docopt
@@ -259,12 +260,15 @@ def process_mails():
         mail = handler.get_mail(mail_id)
         parsed = Parser(mail)
         logger.info(parsed.headers)
-        # filename='{}.eml'.format(parsed.headers['Subject'])
-        filename='{}.eml'.format(mail_id)
+        message = parsed.message
+        filename = '{}.eml'.format(mail_id)
+        if '--get_eml_orig' in arguments:
+            message = parsed.initial_message
+            filename = '{}_o.eml'.format(mail_id)
         logger.info('Writing {} file'.format(filename))
         with open(filename, 'w') as emlfile:
             gen = generator.Generator(emlfile)
-            gen.flatten(parsed.message)
+            gen.flatten(message)
         handler.disconnect()
         lock.close()
         sys.exit()
@@ -281,7 +285,6 @@ def process_mails():
         handler.disconnect()
         lock.close()
         sys.exit()
-
 
     imported = errors = unsupported = 0
     for mail_info in handler.get_waiting_emails():
