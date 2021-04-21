@@ -12,12 +12,14 @@ RUN wget -O wkhtmltox.deb "https://github.com/wkhtmltopdf/wkhtmltopdf/releases/d
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/tmp/*
 
-ADD *.rst buildout.cfg requirements.txt setup.py sources.cfg versions.cfg /app/
+ADD *.rst buildout.cfg entrypoint.sh requirements.txt setup.py sources.cfg versions.cfg /app/
 ADD src /app/src
 
 WORKDIR /app
 
+RUN chmod +x /app/entrypoint.sh
+
 RUN pip install -r requirements.txt && \
     buildout
 
-ENTRYPOINT ["/app/bin/process_mails"]
+ENTRYPOINT ["bash", "/app/entrypoint.sh"]
