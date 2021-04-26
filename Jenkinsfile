@@ -24,7 +24,6 @@ pipeline {
           }
         }
       steps {
-        sh 'make eggs'
         sh 'make docker-image'
       }
     }
