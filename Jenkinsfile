@@ -46,7 +46,7 @@ pipeline {
       steps {
         pushImageToRegistry (
           "${env.BUILD_ID}",
-          "iadocs/dms/mail:latest"
+          "iadocs/dms/mail"
         )
       }
     }
