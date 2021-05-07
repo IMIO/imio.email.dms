@@ -22,6 +22,7 @@ from email.mime.text import MIMEText
 from email import generator
 from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
+from imio.email.dms.utils import safe_unicode
 from imio.email.parser.parser import Parser  # noqa
 from io import BytesIO
 from smtplib import SMTP
@@ -51,8 +52,8 @@ ERROR_MAIL = u"""
 Problematic mail is attached.\n
 Client ID : {0}
 IMAP login : {1}\n
-Corresponding exception : {2.__class__}
-{2.message}\n
+Corresponding exception : {2}
+{3}\n
 """
 
 UNSUPPORTED_ORIGIN_EMAIL = u"""
@@ -96,7 +97,15 @@ def notify_exception(config, mail, error):
     msg["From"] = sender
     msg["To"] = recipient
 
-    main_text = MIMEText(ERROR_MAIL.format(client_id, login, error), "plain")
+    msg = error
+    if hasattr(error, 'message'):
+        msg = safe_unicode(error.message)
+    elif hasattr(error, reason):
+        try:
+            msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
+        except:
+            msg = error.reason
+    main_text = MIMEText(ERROR_MAIL.format(client_id, login, error.__class__, msg), "plain")
     msg.attach(main_text)
 
     attachment = MIMEBase("message", "rfc822")
