@@ -97,15 +97,15 @@ def notify_exception(config, mail, error):
     msg["From"] = sender
     msg["To"] = recipient
 
-    msg = error
+    error_msg = error
     if hasattr(error, 'message'):
-        msg = safe_unicode(error.message)
+        error_msg = safe_unicode(error.message)
     elif hasattr(error, 'reason'):
         try:
-            msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
+            error_msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
         except:
-            msg = error.reason
-    main_text = MIMEText(ERROR_MAIL.format(client_id, login, error.__class__, msg), "plain")
+            error_msg = error.reason
+    main_text = MIMEText(ERROR_MAIL.format(client_id, login, error.__class__, error_msg), "plain")
     msg.attach(main_text)
 
     attachment = MIMEBase("message", "rfc822")
