@@ -52,8 +52,9 @@ ERROR_MAIL = u"""
 Problematic mail is attached.\n
 Client ID : {0}
 IMAP login : {1}\n
-Corresponding exception : {2}
-{3}\n
+mail id : {2}\n
+Corresponding exception : {3}
+{4}\n
 """
 
 UNSUPPORTED_ORIGIN_EMAIL = u"""
@@ -85,7 +86,7 @@ class FileUploadError(Exception):
     """ The response from the webservice file_upload route is not successful """
 
 
-def notify_exception(config, mail, error):
+def notify_exception(config, mail_id, mail, error):
     client_id = config["webservice"]["client_id"]
     login = config["mailbox"]["login"]
     smtp_infos = config["smtp"]
@@ -105,7 +106,7 @@ def notify_exception(config, mail, error):
             error_msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
         except:
             error_msg = error.reason
-    main_text = MIMEText(ERROR_MAIL.format(client_id, login, error.__class__, error_msg), "plain")
+    main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg), "plain")
     msg.attach(main_text)
 
     attachment = MIMEBase("message", "rfc822")
@@ -316,7 +317,7 @@ def process_mails():
             imported += 1
         except Exception as e:
             logger.error(e, exc_info=True)
-            notify_exception(config, mail, e)
+            notify_exception(config, mail_id, mail, e)
             handler.mark_mail_as_error(mail_id)
             errors += 1
 
