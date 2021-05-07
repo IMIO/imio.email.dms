@@ -100,7 +100,7 @@ def notify_exception(config, mail, error):
     msg = error
     if hasattr(error, 'message'):
         msg = safe_unicode(error.message)
-    elif hasattr(error, reason):
+    elif hasattr(error, 'reason'):
         try:
             msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
         except:
