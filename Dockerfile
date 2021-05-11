@@ -1,6 +1,7 @@
 FROM python:3.7-stretch
 
 RUN apt-get update && apt-get install -y \
+    vim \
     xfonts-75dpi \
     xfonts-base
 
