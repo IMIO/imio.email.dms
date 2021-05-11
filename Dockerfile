@@ -1,6 +1,7 @@
 FROM python:3.7-buster
 
 RUN apt-get update && apt-get install -y \
+    dumb-init \
     vim \
     xfonts-75dpi \
     xfonts-base
