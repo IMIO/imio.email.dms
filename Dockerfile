@@ -23,4 +23,4 @@ RUN chmod +x /app/entrypoint.sh
 RUN pip install -r requirements.txt && \
     buildout
 
-ENTRYPOINT ["bash", "/app/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
