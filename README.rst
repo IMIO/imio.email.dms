@@ -25,6 +25,15 @@ To process emails, you can execute ::
 See `config.ini` file for various parameters.
 
 
+Release
+-------
+
+On each commit on this repo, Jenkins will create a new Docker image, push it on imio staging registry and restart staging instance.
+On each release (new tag with zest.releaser_) Jenkins copy latest staging image and push it on prod registry
+
+.. _zest.releaser: https://pypi.org/project/zest.releaser/
+
+
 Errors
 ------
 
