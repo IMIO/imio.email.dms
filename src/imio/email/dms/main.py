@@ -208,7 +208,9 @@ def send_to_ws(config, headers, pdf_path, attachments, mail_id):
     }
 
     auth = (ws['login'], ws['pass'])
-    metadata_url = 'http://{ws[host]}:{ws[port]}/dms_metadata/{client_id}/{ws[version]}'.format(
+    proto = ws['port'] == '443' and 'https' or 'http'
+    metadata_url = '{proto}://{ws[host]}:{ws[port]}/dms_metadata/{client_id}/{ws[version]}'.format(
+        proto=proto,
         ws=ws,
         client_id=client_id,
     )
@@ -221,7 +223,8 @@ def send_to_ws(config, headers, pdf_path, attachments, mail_id):
         raise DmsMetadataError(msg)
     response_id = req_content['id']
 
-    upload_url = 'http://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(ws=ws, id=response_id)
+    upload_url = '{proto}://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(proto=proto, ws=ws,
+                                                                                         id=response_id)
     files = {'filedata': ('archive.tar', tar_content, 'application/tar', {'Expires': '0'})}
     upload_req = requests.post(upload_url, auth=auth, files=files)
     req_content = json.loads(upload_req.content)
