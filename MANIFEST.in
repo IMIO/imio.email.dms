@@ -2,3 +2,14 @@ graft src/imio
 graft docs
 include *.rst
 global-exclude *.pyc
+include *.GPL
+include *.sh
+include *.txt
+include Dockerfile
+include Jenkinsfile
+include Makefile
+include buildout.cfg
+include config.ini
+include sources.cfg
+include versions.cfg
+
