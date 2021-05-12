@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.2 (unreleased)
+0.2 (2021-05-12)
 ----------------
 
 - Used https in requests urls if port is 443.
