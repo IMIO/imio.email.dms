@@ -5,8 +5,8 @@ Changelog
 0.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Added script to clean old processed emails.
+  [sgeulette]
 
 0.2 (2021-05-12)
 ----------------

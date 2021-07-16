@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails [-h] FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>] [--get_eml_orig]
+Usage: process_mails FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>]
+                          [--get_eml_orig]
 
 Arguments:
     FILE         config file
@@ -14,7 +15,9 @@ Options:
     --get_eml_orig      Get eml of original email id (otherwise contained)
     --gen_pdf=<mail_id> Generate pdf of contained email id
 """
+
 from datetime import datetime
+from datetime import timedelta
 from docopt import docopt
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -27,6 +30,7 @@ from imio.email.parser.parser import Parser  # noqa
 from io import BytesIO
 from smtplib import SMTP
 import configparser
+import imaplib
 import json
 import logging
 import os
@@ -104,7 +108,7 @@ def notify_exception(config, mail_id, mail, error):
     elif hasattr(error, 'reason'):
         try:
             error_msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
-        except:
+        except Exception:
             error_msg = error.reason
     main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg), "plain")
     msg.attach(main_text)
@@ -325,9 +329,64 @@ def process_mails():
             errors += 1
 
     logger.info(
-        "{} emails have been imported. {} email are unsupported. {} emails have caused an error.".format(
+        "{} emails have been imported. {} emails are unsupported. {} emails have caused an error.".format(
             imported, unsupported, errors
         )
     )
     handler.disconnect()
     lock.close()
+
+
+def clean_mails():
+    """Clean mails from imap box.
+
+    Usage: clean_mails FILE [-h] [--kept_days=<number>]
+
+    Arguments:
+        FILE         config file
+
+    Options:
+        -h --help               Show this screen.
+        --kept_days=<number>    Days to keep [default: 30]
+    """
+    arguments = docopt(clean_mails.__doc__)
+    config = configparser.ConfigParser()
+    config.read(arguments["FILE"])
+    days = int(arguments["--kept_days"])
+
+    host, port, ssl, login, password = get_mailbox_infos(config)
+    handler = IMAPEmailHandler()
+    handler.connect(host, port, ssl, login, password)
+    before_date = (datetime.now() - timedelta(days)).strftime("%d-%b-%Y")  # date string 01-Jan-2021
+    # before_date = '22-May-2019'
+    res, data = handler.connection.search(None, '(BEFORE {0})'.format(before_date))
+    if res != "OK":
+        logger.error("Unable to fetch mails before '{}'".format(before_date))
+        handler.disconnect()
+        sys.exit()
+    deleted = ignored = error = 0
+    for mail_id in data[0].split():
+        res, flags_data = handler.connection.fetch(mail_id, '(FLAGS)')
+        if res != "OK":
+            logger.error("Unable to fetch flags for mail {0}".format(mail_id))
+            error += 1
+            continue
+        flags = imaplib.ParseFlags(flags_data[0])
+        if b"imported" not in flags:
+            ignored += 1
+            continue
+        mail = handler.get_mail(mail_id)
+        if not mail:
+            error += 1
+            continue
+        parser = Parser(mail)
+        logger.info(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
+        handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
+        deleted += 1
+    if deleted:
+        res, data = handler.connection.expunge()
+        if res != "OK":
+            logger.error("Unable to deleted mails")
+    handler.disconnect()
+    logger.info("{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
+                deleted, ignored, error))

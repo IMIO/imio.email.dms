@@ -51,5 +51,6 @@ setup(
     entry_points="""
     [console_scripts]
     process_mails = imio.email.dms.main:process_mails
+    clean_mails = imio.email.dms.main:clean_mails
     """,
 )
