@@ -340,7 +340,7 @@ def process_mails():
 def clean_mails():
     """Clean mails from imap box.
 
-    Usage: clean_mails FILE [-h] [--kept_days=<number>]
+    Usage: clean_mails FILE [-h] [--kept_days=<number>] [--doit=<number>]
 
     Arguments:
         FILE         config file
@@ -348,17 +348,18 @@ def clean_mails():
     Options:
         -h --help               Show this screen.
         --kept_days=<number>    Days to keep [default: 30]
+        --doit=<number>         Delete really [default: 1]
     """
     arguments = docopt(clean_mails.__doc__)
     config = configparser.ConfigParser()
     config.read(arguments["FILE"])
     days = int(arguments["--kept_days"])
-
+    doit = int(arguments["--doit"])
     host, port, ssl, login, password = get_mailbox_infos(config)
     handler = IMAPEmailHandler()
     handler.connect(host, port, ssl, login, password)
     before_date = (datetime.now() - timedelta(days)).strftime("%d-%b-%Y")  # date string 01-Jan-2021
-    # before_date = '22-May-2019'
+    # before_date = '01-Jun-2021'
     res, data = handler.connection.search(None, '(BEFORE {0})'.format(before_date))
     if res != "OK":
         logger.error("Unable to fetch mails before '{}'".format(before_date))
@@ -381,9 +382,10 @@ def clean_mails():
             continue
         parser = Parser(mail)
         logger.info(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
-        handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
+        if doit == 1:
+            handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
         deleted += 1
-    if deleted:
+    if deleted and doit == 1:
         res, data = handler.connection.expunge()
         if res != "OK":
             logger.error("Unable to deleted mails")
