@@ -340,7 +340,7 @@ def process_mails():
 def clean_mails():
     """Clean mails from imap box.
 
-    Usage: clean_mails FILE [-h] [--kept_days=<number>] [--ignored_too] [--doit=<number>]
+    Usage: clean_mails FILE [-h] [--kept_days=<number>] [--ignored_too] [--list_only]
 
     Arguments:
         FILE         config file
@@ -349,13 +349,13 @@ def clean_mails():
         -h --help               Show this screen.
         --kept_days=<number>    Days to keep [default: 30]
         --ignored_too           Get also not imported emails
-        --doit=<number>         Delete really [default: 1]
+        --list_only             Only list related emails, do not delete
     """
     arguments = docopt(clean_mails.__doc__)
     config = configparser.ConfigParser()
     config.read(arguments["FILE"])
     days = int(arguments["--kept_days"])
-    doit = int(arguments["--doit"])
+    doit = not arguments["--list_only"]
     host, port, ssl, login, password = get_mailbox_infos(config)
     handler = IMAPEmailHandler()
     handler.connect(host, port, ssl, login, password)
@@ -383,10 +383,10 @@ def clean_mails():
             continue
         parser = Parser(mail)
         logger.info(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
-        if doit == 1:
+        if doit:
             handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
         deleted += 1
-    if deleted and doit == 1:
+    if deleted and doit:
         res, data = handler.connection.expunge()
         if res != "OK":
             logger.error("Unable to deleted mails")
