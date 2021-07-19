@@ -367,7 +367,10 @@ def clean_mails():
         handler.disconnect()
         sys.exit()
     deleted = ignored = error = 0
-    for mail_id in data[0].split():
+    mail_ids = data[0].split()
+    logger.info("Get '{}' emails older than '{}'".format(len(mail_ids), before_date))
+    # sys.exit()
+    for mail_id in mail_ids:
         res, flags_data = handler.connection.fetch(mail_id, '(FLAGS)')
         if res != "OK":
             logger.error("Unable to fetch flags for mail {0}".format(mail_id))
