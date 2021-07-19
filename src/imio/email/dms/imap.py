@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-
 from imio.email.parser.parser import Parser  # noqa
 from mailparser import MailParser
 
+import chardet
 import email
 import imaplib
 import logging
 import six
+
 
 logger = logging.getLogger("imio.email.dms")
 
@@ -55,7 +56,11 @@ class IMAPEmailHandler(object):
             return None
         mail_body = mail_data[0][1]
         if six.PY3:
-            mail_body = mail_body.decode("utf-8")
+            try:
+                mail_body = mail_body.decode("utf-8")
+            except UnicodeDecodeError:
+                detection = chardet.detect(mail_body)
+                mail_body = mail_body.decode(detection["encoding"])
         mail = email.message_from_string(mail_body)
         return mail
 
