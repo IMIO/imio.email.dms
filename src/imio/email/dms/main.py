@@ -340,7 +340,7 @@ def process_mails():
 def clean_mails():
     """Clean mails from imap box.
 
-    Usage: clean_mails FILE [-h] [--kept_days=<number>] [--doit=<number>]
+    Usage: clean_mails FILE [-h] [--kept_days=<number>] [--ignored_too] [--doit=<number>]
 
     Arguments:
         FILE         config file
@@ -348,6 +348,7 @@ def clean_mails():
     Options:
         -h --help               Show this screen.
         --kept_days=<number>    Days to keep [default: 30]
+        --ignored_too           Get also not imported emails
         --doit=<number>         Delete really [default: 1]
     """
     arguments = docopt(clean_mails.__doc__)
@@ -373,7 +374,7 @@ def clean_mails():
             error += 1
             continue
         flags = imaplib.ParseFlags(flags_data[0])
-        if b"imported" not in flags:
+        if not arguments["--ignored_too"] and b"imported" not in flags:
             ignored += 1
             continue
         mail = handler.get_mail(mail_id)
