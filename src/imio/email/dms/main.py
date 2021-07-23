@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails FILE [--requeue_errors] [--list_emails] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>]
+Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>]
                           [--get_eml_orig]
 
 Arguments:
     FILE         config file
 
 Options:
-    -h --help           Show this screen.
-    --requeue_errors    Put email in error status back in waiting for processing
-    --list_emails       List last 20 emails
-    --get_eml=<mail_id> Get eml of original/contained email id
-    --get_eml_orig      Get eml of original email id (otherwise contained)
-    --gen_pdf=<mail_id> Generate pdf of contained email id
+    -h --help               Show this screen.
+    --requeue_errors        Put email in error status back in waiting for processing.
+    --list_emails=<number>  List last xx emails.
+    --get_eml=<mail_id>     Get eml of original/contained email id.
+    --get_eml_orig          Get eml of original email id (otherwise contained).
+    --gen_pdf=<mail_id>     Generate pdf of contained email id.
 """
 
 from datetime import datetime
@@ -264,7 +264,7 @@ def process_mails():
         lock.close()
         sys.exit()
     elif arguments.get("--list_emails"):
-        handler.list_last_emails()
+        handler.list_last_emails(nb=int(arguments.get("--list_emails")))
         # import ipdb; ipdb.set_trace()
         # handler.mark_reset_error('58')
         handler.disconnect()

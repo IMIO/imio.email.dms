@@ -7,6 +7,8 @@ Changelog
 
 - Added script to clean old processed emails.
   [sgeulette]
+- Changed --list_emails parameter in main script
+  [sgeulette]
 
 0.2 (2021-05-12)
 ----------------
