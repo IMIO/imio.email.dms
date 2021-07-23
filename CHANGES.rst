@@ -5,6 +5,8 @@ Changelog
 0.3 (unreleased)
 ----------------
 
+- Avoid exception when decoding in `get_email`
+  [sgeulette]
 - Added script to clean old processed emails.
   [sgeulette]
 - Changed --list_emails parameter in main script
