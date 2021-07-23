@@ -389,10 +389,12 @@ def clean_mails():
         if doit:
             handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
         deleted += 1
-    if deleted and doit:
-        res, data = handler.connection.expunge()
-        if res != "OK":
-            logger.error("Unable to deleted mails")
+    if deleted:
+        logger.info("Get '{}' emails older than '{}'".format(len(mail_ids), before_date))
+        if doit:
+            res, data = handler.connection.expunge()
+            if res != "OK":
+                logger.error("Unable to deleted mails")
     handler.disconnect()
     logger.info("{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
                 deleted, ignored, error))
