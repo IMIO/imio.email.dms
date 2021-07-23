@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.3 (unreleased)
+0.3 (2021-07-23)
 ----------------
 
 - Avoid exception when decoding in `get_email`
