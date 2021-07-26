@@ -81,6 +81,12 @@ If you are using Mozilla Thunderbird:\n
 Please excuse us for the inconvenience.\n
 """
 
+RESULT_MAIL = u"""
+Client ID : {0}
+IMAP login : {1}\n
+{2}\n
+"""
+
 
 class DmsMetadataError(Exception):
     """ The response from the webservice dms_metadata route is not successful """
@@ -144,6 +150,27 @@ def notify_unsupported_origin(config, mail, from_):
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
     smtp.sendmail(sender, from_, msg_content)
+    smtp.quit()
+
+
+def notify_result(config, subject, message):
+    client_id = config["webservice"]["client_id"]
+    login = config["mailbox"]["login"]
+    smtp_infos = config["smtp"]
+    sender = smtp_infos["sender"]
+    recipient = smtp_infos["recipient"]
+
+    msg = MIMEMultipart()
+    msg["Subject"] = "{} for client {}".format(subject, client_id)
+    msg["From"] = sender
+    msg["To"] = recipient
+
+    main_text = MIMEText(RESULT_MAIL.format(client_id, login, message), "plain")
+    msg.attach(main_text)
+
+    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
+    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
+    smtp.sendmail(sender, recipient, msg_content)
     smtp.quit()
 
 
@@ -368,7 +395,9 @@ def clean_mails():
         sys.exit()
     deleted = ignored = error = 0
     mail_ids = data[0].split()
-    logger.info("Get '{}' emails older than '{}'".format(len(mail_ids), before_date))
+    mail_ids_len = len(mail_ids)
+    out = [u"Get '{}' emails older than '{}'".format(mail_ids_len, before_date)]
+    logger.info("Get '{}' emails older than '{}'".format(mail_ids_len, before_date))
     # sys.exit()
     for mail_id in mail_ids:
         res, flags_data = handler.connection.fetch(mail_id, '(FLAGS)')
@@ -386,15 +415,20 @@ def clean_mails():
             continue
         parser = Parser(mail)
         logger.info(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
+        out.append(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
         if doit:
             handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
         deleted += 1
     if deleted:
-        logger.info("Get '{}' emails older than '{}'".format(len(mail_ids), before_date))
+        logger.info("Get '{}' emails older than '{}'".format(mail_ids_len, before_date))
         if doit:
             res, data = handler.connection.expunge()
             if res != "OK":
+                out.append(u"ERROR: Unable to deleted mails !!")
                 logger.error("Unable to deleted mails")
     handler.disconnect()
+    out.append(u"{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
+               deleted, ignored, error))
     logger.info("{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
                 deleted, ignored, error))
+    notify_result(config, 'Result of clean_mails', u'\n'.join(out))

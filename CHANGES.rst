@@ -5,8 +5,8 @@ Changelog
 0.4 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Send email notification after clean_mails.
+  [sgeulette]
 
 0.3 (2021-07-23)
 ----------------
