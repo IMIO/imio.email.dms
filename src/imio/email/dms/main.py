@@ -22,7 +22,6 @@ from docopt import docopt
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email import generator
 from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.utils import safe_unicode
@@ -39,6 +38,7 @@ import six
 import sys
 import tarfile
 import zc.lockfile
+from imio.email.dms.utils import save_as_eml
 
 try:
     from pathlib import Path
@@ -306,13 +306,11 @@ def process_mails():
         logger.info(parsed.headers)
         message = parsed.message
         filename = '{}.eml'.format(mail_id)
-        if '--get_eml_orig' in arguments:
+        if arguments.get('--get_eml_orig'):
             message = parsed.initial_message
             filename = '{}_o.eml'.format(mail_id)
         logger.info('Writing {} file'.format(filename))
-        with open(filename, 'w') as emlfile:
-            gen = generator.Generator(emlfile)
-            gen.flatten(message)
+        save_as_eml(filename, message)
         handler.disconnect()
         lock.close()
         sys.exit()

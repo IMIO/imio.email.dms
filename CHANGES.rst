@@ -7,6 +7,8 @@ Changelog
 
 - Send email notification after clean_mails.
   [sgeulette]
+- Corrected error in get_eml option. Added `save_as_eml` function.
+  [sgeulette]
 
 0.3 (2021-07-23)
 ----------------
