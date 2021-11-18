@@ -191,7 +191,7 @@ def get_preview_pdf_path(config, mail_id):
     return os.path.join(output_dir, filename)
 
 
-def send_to_ws(config, headers, pdf_path, attachments, mail_id):
+def send_to_ws(config, headers, main_file_path, attachments, mail_id):
     ws = config["webservice"]
     client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
     counter_dir = Path(ws['counter_dir'])
@@ -200,15 +200,16 @@ def send_to_ws(config, headers, pdf_path, attachments, mail_id):
         next_id = int(next_id_path.read_text()) + 1
     else:
         next_id = 1
-
     external_id = "{0}{1:08d}".format(client_id, next_id)
+
     tar_path = Path('/tmp') / '{}.tar'.format(external_id)
     with tarfile.open(str(tar_path), "w") as tar:
-        # 1) email pdf printout
-        pdf_contents = Path(pdf_path).open('rb').read()
-        pdf_info = tarfile.TarInfo(name='email.pdf')
-        pdf_info.size = len(pdf_contents)
-        tar.addfile(tarinfo=pdf_info, fileobj=BytesIO(pdf_contents))
+        # 1) email pdf printout or eml file
+        mf_contents = Path(main_file_path).open('rb').read()
+        basename, ext = os.path.splitext(main_file_path)
+        mf_info = tarfile.TarInfo(name='email{}'.format(ext))
+        mf_info.size = len(mf_contents)
+        tar.addfile(tarinfo=mf_info, fileobj=BytesIO(mf_contents))
 
         # 2) metadata.json
         metadata_contents = json.dumps(headers).encode("utf8") if six.PY3 else json.dumps(headers)
@@ -332,7 +333,7 @@ def process_mails():
     for mail_info in handler.get_waiting_emails():
         mail_id = mail_info.id
         mail = mail_info.mail
-        pdf_path = get_preview_pdf_path(config, mail_id)
+        main_file_path = get_preview_pdf_path(config, mail_id)
         try:
             parser = Parser(mail)
             if parser.origin == 'Generic inbox':
@@ -343,8 +344,13 @@ def process_mails():
                 continue
             headers = parser.headers
             attachments = parser.attachments
-            parser.generate_pdf(pdf_path)
-            send_to_ws(config, headers, pdf_path, attachments, mail_id)
+            try:
+                parser.generate_pdf(main_file_path)
+            except Exception as pdf_exc:
+                # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
+                main_file_path = main_file_path.replace('.pdf', '.eml')
+                save_as_eml(main_file_path, parser.message)
+            send_to_ws(config, headers, main_file_path, attachments, mail_id)
             handler.mark_mail_as_imported(mail_id)
             imported += 1
         except Exception as e:

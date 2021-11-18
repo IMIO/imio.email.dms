@@ -9,6 +9,8 @@ Changelog
   [sgeulette]
 - Corrected error in get_eml option. Added `save_as_eml` function.
   [sgeulette]
+- Handled pdf conversion error by sending eml file
+  [sgeulette]
 
 0.3 (2021-07-23)
 ----------------
