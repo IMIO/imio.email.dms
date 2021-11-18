@@ -81,6 +81,24 @@ If you are using Mozilla Thunderbird:\n
 Please excuse us for the inconvenience.\n
 """
 
+UNSUPPORTED_ORIGIN_EMAIL = u"""
+Cher utilisateur d'iA.Docs,
+
+Le transfert de l'email attaché a été rejeté car il n'a pas été transféré correctement.\n
+Veuillez refaire le transfert du mail original en transférant "en tant que pièce jointe".\n
+Si vous utilisez Microsoft Outlook:\n
+- Dans le ruban, cliquez sur la flèche du ménu déroulant située sur le bouton de transfert\n
+- Choisissez le transfert en tant que pièce jointe\n
+- Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
+\n
+Si vous utilisez Mozilla Thunderbird:\n
+- Faites un clic droit sur l'email pour ouvrir le menu contextuel\n
+- Sélectionnez "Transférer au format" > "Pièce jointe".\n
+- Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
+\n
+Cordialement.\n
+"""
+
 RESULT_MAIL = u"""
 Client ID : {0}
 IMAP login : {1}\n
@@ -136,6 +154,7 @@ def notify_unsupported_origin(config, mail, from_):
 
     msg = MIMEMultipart()
     msg["Subject"] = "Error importing email into iA.docs"
+    msg["Subject"] = "Erreur de transfert de votre email dans iA.Docs"
     msg["From"] = sender
     msg["To"] = from_
 

@@ -11,6 +11,8 @@ Changelog
   [sgeulette]
 - Handled pdf conversion error by sending eml file
   [sgeulette]
+- Set unsupported email in french
+  [sgeulette]
 
 0.3 (2021-07-23)
 ----------------
