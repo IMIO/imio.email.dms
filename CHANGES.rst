@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.4 (unreleased)
+0.4 (2021-11-24)
 ----------------
 
 - Send email notification after clean_mails.
