@@ -2,10 +2,12 @@ Changelog
 =========
 
 
-0.5 (unreleased)
+0.5 (2022-01-11)
 ----------------
 
 - Added --stats option.
+  [sgeulette]
+- Added timeout in email2pdf to avoid wasting time in external image retriever
   [sgeulette]
 
 0.4 (2021-11-24)
