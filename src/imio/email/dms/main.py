@@ -25,6 +25,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
+from imio.email.dms.imap import MailData
 from imio.email.dms.utils import safe_unicode
 from imio.email.parser.parser import Parser  # noqa
 from io import BytesIO
@@ -315,6 +316,12 @@ def process_mails():
         handler.list_last_emails(nb=int(arguments.get("--list_emails")))
         # import ipdb; ipdb.set_trace()
         # handler.mark_reset_error('58')
+        # res, data = handler.connection.search(None, 'SUBJECT "JBC client"')
+        # for mail_id in data[0].split():
+        #      mail = handler.get_mail(mail_id)
+        #      mail_infos = MailData(mail_id, mail)
+        #      email = mail_infos.mail
+        #     logger.info(email['Subject'])
         handler.disconnect()
         lock.close()
         sys.exit()
