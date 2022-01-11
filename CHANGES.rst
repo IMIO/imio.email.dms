@@ -5,8 +5,8 @@ Changelog
 0.5 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Added --stats option.
+  [sgeulette]
 
 0.4 (2021-11-24)
 ----------------

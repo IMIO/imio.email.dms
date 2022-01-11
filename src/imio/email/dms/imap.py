@@ -118,6 +118,27 @@ class IMAPEmailHandler(object):
             logger.info(lst[-1])
         return lst
 
+    def stats(self):
+        """List all flags"""
+        res, data = self.connection.search(None, 'ALL')
+        if res != "OK":
+            logger.error("Unable to fetch mails")
+            return []
+        lst = []
+        stats = {'tot': 0, 'flags': {}}
+        for mail_id in data[0].split():
+            stats['tot'] += 1
+            res, flags_data = self.connection.fetch(mail_id, '(FLAGS)')
+            if res != "OK":
+                logger.error("Unable to fetch flags for mail {0}".format(mail_id))
+                continue
+            for flag in imaplib.ParseFlags(flags_data[0]):
+                flag = flag.decode()
+                if flag not in stats['flags']:
+                    stats['flags'][flag] = 0
+                stats['flags'][flag] += 1
+        return stats
+
     def mark_reset_error(self, mail_id):
         """Reset 'error' / 'waiting' flags on specified mail"""
         self.connection.store(mail_id, "-FLAGS", "imported")

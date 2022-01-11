@@ -2,7 +2,7 @@
 
 """
 Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>]
-                          [--get_eml_orig]
+                          [--get_eml_orig] [--stats]
 
 Arguments:
     FILE         config file
@@ -14,6 +14,7 @@ Options:
     --get_eml=<mail_id>     Get eml of original/contained email id.
     --get_eml_orig          Get eml of original email id (otherwise contained).
     --gen_pdf=<mail_id>     Generate pdf of contained email id.
+    --stats                 Get email stats following stats
 """
 
 from datetime import datetime
@@ -346,6 +347,16 @@ def process_mails():
         parsed.generate_pdf(pdf_path)
         handler.disconnect()
         lock.close()
+        sys.exit()
+    elif arguments.get("--stats"):
+        logger.info('Started at {}'.format(datetime.now()))
+        stats = handler.stats()
+        logger.info("Total mails: {}".format(stats.pop('tot')))
+        for flag in sorted(stats['flags']):
+            logger.info("Flag '{}' => {}".format(flag, stats['flags'][flag]))
+        handler.disconnect()
+        lock.close()
+        logger.info('Ended at {}'.format(datetime.now()))
         sys.exit()
 
     imported = errors = unsupported = 0
