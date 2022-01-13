@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.6 (unreleased)
+0.6 (2022-01-13)
 ----------------
 
 - Corrected bug in email2pdf.
