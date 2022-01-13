@@ -66,15 +66,15 @@ class IMAPEmailHandler(object):
 
     def get_waiting_emails(self):
         """Fetch all waiting messages"""
-        res, data = self.connection.search(None,
-                                           u"NOT KEYWORD imported", u"NOT KEYWORD unsupported", u"NOT KEYWORD error")
-                                           # u"KEYWORD error")
+        args = [u"NOT KEYWORD imported", u"NOT KEYWORD unsupported", u"NOT KEYWORD error"]
+        # args = [u"KEYWORD imported"]
+        res, data = self.connection.search(None, *args)
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
         waiting = []
         for mail_id in data[0].split():
-            # if mail_id != b'771': continue
+            # if mail_id != b'3335': continue
             mail = self.get_mail(mail_id)
             if not mail:
                 continue

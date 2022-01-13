@@ -367,6 +367,7 @@ def process_mails():
         sys.exit()
 
     imported = errors = unsupported = 0
+    # import ipdb; ipdb.set_trace()
     for mail_info in handler.get_waiting_emails():
         mail_id = mail_info.id
         mail = mail_info.mail

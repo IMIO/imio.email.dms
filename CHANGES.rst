@@ -5,8 +5,8 @@ Changelog
 0.6 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Corrected bug in email2pdf.
+  [sgeulette]
 
 0.5 (2022-01-11)
 ----------------
