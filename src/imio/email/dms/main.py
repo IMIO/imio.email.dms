@@ -16,7 +16,6 @@ Options:
     --gen_pdf=<mail_id>     Generate pdf of contained email id.
     --stats                 Get email stats following stats
 """
-
 from datetime import datetime
 from datetime import timedelta
 from docopt import docopt
@@ -35,6 +34,7 @@ import imaplib
 import json
 import logging
 import os
+import re
 import requests
 import six
 import sys
@@ -99,6 +99,15 @@ Si vous utilisez Mozilla Thunderbird:\n
 - Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
 \n
 Cordialement.\n
+"""
+
+IGNORED_MAIL = u"""
+Problematic mail is attached.\n
+Client ID : {0}
+IMAP login : {1}\n
+mail id : {2}\n
+transferer : {3}
+pattern : {4}\n
 """
 
 RESULT_MAIL = u"""
@@ -174,6 +183,33 @@ def notify_unsupported_origin(config, mail, from_):
     smtp.quit()
 
 
+def notify_ignored(config, mail_id, mail, from_):
+    client_id = config["webservice"]["client_id"]
+    login = config["mailbox"]["login"]
+    smtp_infos = config["smtp"]
+    sender = smtp_infos["sender"]
+    recipient = smtp_infos["recipient"]
+
+    msg = MIMEMultipart()
+    msg["Subject"] = "Unauthorized transferer {} for client {}".format(from_, client_id)
+    msg["From"] = sender
+    msg["To"] = recipient
+
+    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
+                         "plain")
+    msg.attach(main_text)
+
+    attachment = MIMEBase("message", "rfc822")
+    attachment.set_payload(mail.as_string())
+    attachment.add_header("Content-Disposition", "inline")
+    msg.attach(attachment)
+
+    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
+    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
+    smtp.sendmail(sender, recipient, msg_content)
+    smtp.quit()
+
+
 def notify_result(config, subject, message):
     client_id = config["webservice"]["client_id"]
     login = config["mailbox"]["login"]
@@ -193,6 +229,12 @@ def notify_result(config, subject, message):
     msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
     smtp.sendmail(sender, recipient, msg_content)
     smtp.quit()
+
+
+def check_transferer(sender, pattern):
+    if re.match(pattern, sender, re.I):
+        return True
+    return False
 
 
 def get_mailbox_infos(config):
@@ -366,7 +408,7 @@ def process_mails():
         logger.info('Ended at {}'.format(datetime.now()))
         sys.exit()
 
-    imported = errors = unsupported = 0
+    imported = errors = unsupported = ignored = 0
     # import ipdb; ipdb.set_trace()
     for mail_info in handler.get_waiting_emails():
         mail_id = mail_info.id
@@ -381,6 +423,14 @@ def process_mails():
                 unsupported += 1
                 continue
             headers = parser.headers
+            # we check if the pushing agent has a permitted email format
+            if not check_transferer(headers['Agent'][0][1], config['mailinfos'].get('sender-pattern', '.*')):
+                handler.mark_mail_as_ignored(mail_id)
+                notify_ignored(config, mail_id, mail, headers['Agent'][0][1])
+                # logger.error('Rejecting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
+                ignored += 1
+                continue
+            # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
             attachments = parser.attachments
             try:
                 parser.generate_pdf(main_file_path)
@@ -397,11 +447,8 @@ def process_mails():
             handler.mark_mail_as_error(mail_id)
             errors += 1
 
-    logger.info(
-        "{} emails have been imported. {} emails are unsupported. {} emails have caused an error.".format(
-            imported, unsupported, errors
-        )
-    )
+    logger.info("{} emails have been imported. {} emails are unsupported. {} emails have caused an error. {} emails "
+                "are ignored".format(imported, unsupported, errors, ignored))
     handler.disconnect()
     lock.close()
 

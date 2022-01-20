@@ -5,8 +5,8 @@ Changelog
 0.7 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Added transferer check following pattern to avoid anyone can push an email in the app.
+  [sgeulette]
 
 0.6 (2022-01-13)
 ----------------

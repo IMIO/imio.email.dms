@@ -113,8 +113,8 @@ class IMAPEmailHandler(object):
             if isinstance(mail_id, bytes):
                 mail_id = mail_id.decode()
                 flags = [fl.decode() for fl in flags]
-            lst.append(u"{}: '{}', '{}', {}".format(mail_id, parsed_orig_mail.subject, parser.headers['Subject'],
-                                                    flags))
+            lst.append(u"{}: '{}', '{}', {}, ''{}".format(mail_id, parsed_orig_mail.subject, parser.headers['Subject'],
+                                                          parsed_orig_mail.headers['From'], flags))
             logger.info(lst[-1])
         return lst
 
@@ -159,3 +159,8 @@ class IMAPEmailHandler(object):
         """(Un)Mark 'unsupported' / 'waiting' flags on specified mail"""
         self.connection.store(mail_id, "-FLAGS", "waiting")
         self.connection.store(mail_id, "+FLAGS", "unsupported")
+
+    def mark_mail_as_ignored(self, mail_id):
+        """(Un)Mark 'ignore' / 'waiting' flags on specified mail"""
+        self.connection.store(mail_id, "-FLAGS", "waiting")
+        self.connection.store(mail_id, "+FLAGS", "ignored")
