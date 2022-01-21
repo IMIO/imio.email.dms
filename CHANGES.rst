@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.7 (unreleased)
+0.7 (2022-01-21)
 ----------------
 
 - Added transferer check following pattern to avoid anyone can push an email in the app.
