@@ -102,12 +102,12 @@ Cordialement.\n
 """
 
 IGNORED_MAIL = u"""
-Problematic mail is attached.\n
+Related mail is attached.\n
 Client ID : {0}
 IMAP login : {1}\n
 mail id : {2}\n
 transferer : {3}
-pattern : {4}\n
+pattern : "{4}"\n
 """
 
 RESULT_MAIL = u"""
@@ -424,7 +424,7 @@ def process_mails():
                 continue
             headers = parser.headers
             # we check if the pushing agent has a permitted email format
-            if not check_transferer(headers['Agent'][0][1], config['mailinfos'].get('sender-pattern', '.*')):
+            if not check_transferer(headers['Agent'][0][1], config['mailinfos'].get('sender-pattern', '.+')):
                 handler.mark_mail_as_ignored(mail_id)
                 notify_ignored(config, mail_id, mail, headers['Agent'][0][1])
                 # logger.error('Rejecting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
