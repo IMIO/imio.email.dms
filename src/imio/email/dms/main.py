@@ -102,12 +102,14 @@ Cordialement.\n
 """
 
 IGNORED_MAIL = u"""
-Related mail is attached.\n
+Bonjour,
+Votre adresse email {3} n'est pas autorisée à transférer un email vers iA.docs.
+Si cette action est justifiée, veuillez prendre contact avec votre référent interne.\n
+Le mail concerné est en pièce jointe.\n
 Client ID : {0}
-IMAP login : {1}\n
-mail id : {2}\n
-transferer : {3}
-pattern : "{4}"\n
+IMAP login : {1}
+mail id : {2}
+pattern : "{4}"
 """
 
 RESULT_MAIL = u"""
@@ -191,9 +193,10 @@ def notify_ignored(config, mail_id, mail, from_):
     recipient = smtp_infos["recipient"]
 
     msg = MIMEMultipart()
-    msg["Subject"] = "Unauthorized transferer {} for client {}".format(from_, client_id)
+    msg["Subject"] = "Transfert non autorisé de {} pour le client {}".format(from_, client_id)
     msg["From"] = sender
-    msg["To"] = recipient
+    msg["To"] = from_
+    msg["Bcc"] = recipient
 
     main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
                          "plain")
@@ -358,6 +361,7 @@ def process_mails():
         handler.list_last_emails(nb=int(arguments.get("--list_emails")))
         # import ipdb; ipdb.set_trace()
         # handler.mark_reset_error('58')
+        # handler.mark_reset_ignored('77')
         # res, data = handler.connection.search(None, 'SUBJECT "JBC client"')
         # for mail_id in data[0].split():
         #      mail = handler.get_mail(mail_id)

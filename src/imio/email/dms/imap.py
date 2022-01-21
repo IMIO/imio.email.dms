@@ -145,6 +145,12 @@ class IMAPEmailHandler(object):
         self.connection.store(mail_id, "-FLAGS", "error")
         self.connection.store(mail_id, "+FLAGS", "waiting")
 
+    def mark_reset_ignored(self, mail_id):
+        """Reset 'ignored' / 'waiting' flags on specified mail"""
+        self.connection.store(mail_id, "-FLAGS", "imported")
+        self.connection.store(mail_id, "-FLAGS", "ignored")
+        self.connection.store(mail_id, "+FLAGS", "waiting")
+
     def mark_mail_as_imported(self, mail_id):
         """(Un)Mark 'imported' / 'waiting' flags on specified mail"""
         self.connection.store(mail_id, "-FLAGS", "waiting")
