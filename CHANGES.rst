@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.8 (unreleased)
+0.8 (2022-01-24)
 ----------------
 
 - Ignored ignored flaged mails when getting waiting emails.
