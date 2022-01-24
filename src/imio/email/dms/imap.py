@@ -66,7 +66,7 @@ class IMAPEmailHandler(object):
 
     def get_waiting_emails(self):
         """Fetch all waiting messages"""
-        args = [u"NOT KEYWORD imported", u"NOT KEYWORD unsupported", u"NOT KEYWORD error"]
+        args = [u"NOT KEYWORD imported", u"NOT KEYWORD unsupported", u"NOT KEYWORD error", u"NOT KEYWORD ignored"]
         # args = [u"KEYWORD imported"]
         res, data = self.connection.search(None, *args)
         if res != "OK":

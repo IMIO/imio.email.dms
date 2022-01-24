@@ -5,8 +5,8 @@ Changelog
 0.8 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Ignored ignored flaged mails when getting waiting emails.
+  [sgeulette]
 
 0.7 (2022-01-21)
 ----------------
