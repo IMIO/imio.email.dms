@@ -109,7 +109,7 @@ Le mail concerné est en pièce jointe.\n
 Client ID : {0}
 IMAP login : {1}
 mail id : {2}
-pattern : "{4}"
+pattern : "caché"
 """
 
 RESULT_MAIL = u"""
@@ -198,8 +198,8 @@ def notify_ignored(config, mail_id, mail, from_):
     msg["To"] = from_
     msg["Bcc"] = recipient
 
-    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
-                         "plain")
+#    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
+    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_), "plain")
     msg.attach(main_text)
 
     attachment = MIMEBase("message", "rfc822")
