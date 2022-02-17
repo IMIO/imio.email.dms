@@ -5,13 +5,17 @@ Changelog
 0.9 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Removed pattern in sent email for ignored error.
+  [sgeulette]
+- Corrected badly addresses from email.utils.getAddresses (in imio.email.parser)
+  [sgeulette]
+- Upgraded mail-parser
+  [sgeulette]
 
 0.8 (2022-01-24)
 ----------------
 
-- Ignored ignored flaged mails when getting waiting emails.
+- Ignored 'ignored' flaged mails when getting waiting emails.
   [sgeulette]
 
 0.7 (2022-01-21)

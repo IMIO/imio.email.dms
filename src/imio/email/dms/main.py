@@ -364,9 +364,11 @@ def process_mails():
         # handler.mark_reset_ignored('77')
         # res, data = handler.connection.search(None, 'SUBJECT "JBC client"')
         # for mail_id in data[0].split():
-        #      mail = handler.get_mail(mail_id)
-        #      mail_infos = MailData(mail_id, mail)
-        #      email = mail_infos.mail
+        #      omail = handler.get_mail(mail_id)
+        #      parser = Parser(omail)
+        #      headers = parser.headers
+        #      amail = parser.message
+        #      parsed = MailParser(omail)
         #     logger.info(email['Subject'])
         handler.disconnect()
         lock.close()
