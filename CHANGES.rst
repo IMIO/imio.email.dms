@@ -11,7 +11,7 @@ Changelog
 0.10 (2022-02-17)
 -----------------
 
-- Removed \r\n from attachement filename in imio.email.parser.
+- Removed newline characters from attachment filename in imio.email.parser.
  [sgeulette]
 
 0.9 (2022-02-17)
