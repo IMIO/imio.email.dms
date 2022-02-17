@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.9 (unreleased)
+0.9 (2022-02-17)
 ----------------
 
 - Removed pattern in sent email for ignored error.
