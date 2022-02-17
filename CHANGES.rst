@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.10 (unreleased)
+0.10 (2022-02-17)
 -----------------
 
 - Removed \r\n from attachement filename in imio.email.parser.
