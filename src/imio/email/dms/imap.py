@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from imio.email.dms.utils import reception_date
 from imio.email.parser.parser import Parser  # noqa
 from mailparser import MailParser
 
@@ -110,11 +111,12 @@ class IMAPEmailHandler(object):
                 continue
             parser = Parser(mail)
             parsed_orig_mail = MailParser(mail)
+            r_date = reception_date(mail)
             if isinstance(mail_id, bytes):
                 mail_id = mail_id.decode()
                 flags = [fl.decode() for fl in flags]
-            lst.append(u"{}: '{}', '{}', {}, ''{}".format(mail_id, parsed_orig_mail.subject, parser.headers['Subject'],
-                                                          parsed_orig_mail.headers['From'], flags))
+            lst.append(u"{}, {}: '{}', '{}', {}, ''{}".format(r_date, mail_id, parsed_orig_mail.subject,
+                       parser.headers['Subject'], parsed_orig_mail.headers['From'], flags))
             logger.info(lst[-1])
         return lst
 
