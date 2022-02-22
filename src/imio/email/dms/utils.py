@@ -2,6 +2,8 @@
 from datetime import datetime
 from email import generator
 from email import utils
+from io import BytesIO
+from PIL import Image
 
 
 def safe_unicode(value, encoding='utf-8'):
@@ -24,6 +26,7 @@ def save_as_eml(path, message):
 
 
 def reception_date(message):
+    """Returns localized mail date"""
     date_str = message.get('date')
     r_date = u''
     if date_str:
@@ -32,3 +35,18 @@ def reception_date(message):
             date = datetime.fromtimestamp(utils.mktime_tz(date_tuple))
             r_date = date.strftime('%Y-%m-%d %H:%M')
     return r_date
+
+
+def modify_attachments(attachments):
+    """Reduce size attachments"""
+    new_lst = []
+    for dic in attachments:
+        # we pass inline image, often used in signatures. This image will be in generated pdf
+        if dic['type'].startswith('image/') and dic['disp'] == 'inline':
+            continue
+#        if dic['type'].startswith('image/') and dic['size'] > 1000000:
+#         if dic['type'].startswith('image/'):
+#             img = Image.open(BytesIO(dic['content']))
+#             filename = dic['filename']
+        new_lst.append(dic)
+    return new_lst

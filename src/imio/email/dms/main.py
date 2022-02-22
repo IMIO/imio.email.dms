@@ -25,6 +25,7 @@ from email.mime.text import MIMEText
 from hashlib import md5
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.imap import MailData
+from imio.email.dms.utils import modify_attachments
 from imio.email.dms.utils import safe_unicode
 from imio.email.parser.parser import Parser  # noqa
 from io import BytesIO
@@ -437,13 +438,13 @@ def process_mails():
                 ignored += 1
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
-            attachments = parser.attachments
             try:
                 parser.generate_pdf(main_file_path)
             except Exception as pdf_exc:
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace('.pdf', '.eml')
                 save_as_eml(main_file_path, parser.message)
+            attachments = modify_attachments(parser.attachments)
             send_to_ws(config, headers, main_file_path, attachments, mail_id)
             handler.mark_mail_as_imported(mail_id)
             imported += 1
