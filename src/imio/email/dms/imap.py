@@ -115,8 +115,9 @@ class IMAPEmailHandler(object):
             if isinstance(mail_id, bytes):
                 mail_id = mail_id.decode()
                 flags = [fl.decode() for fl in flags]
-            lst.append(u"{}, {}: '{}', '{}', {}, ''{}".format(r_date, mail_id, parsed_orig_mail.subject,
-                       parser.headers['Subject'], parsed_orig_mail.headers['From'], flags))
+            lst.append(u"{}, {}: '{}', '{}', '{}', '{}'".format(r_date, mail_id, parsed_orig_mail.headers['From'],
+                       parsed_orig_mail.subject, parser.parsed_message.headers['From'], parser.headers['Subject'],
+                       flags))
             logger.info(lst[-1])
         return lst
 
