@@ -23,6 +23,8 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
+from imio.email.dms import dev_mode
+from imio.email.dms import logger
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.imap import MailData
 from imio.email.dms.utils import modify_attachments
@@ -33,7 +35,6 @@ from smtplib import SMTP
 import configparser
 import imaplib
 import json
-import logging
 import os
 import re
 import requests
@@ -46,14 +47,10 @@ from imio.email.dms.utils import save_as_eml
 try:
     from pathlib import Path
 except ImportError:
-    from pathlib2 import Path
+    from pathlib2 import Path  # noqa
 
-logger = logging.getLogger("imio.email.dms")
-logger.setLevel(logging.INFO)
-chandler = logging.StreamHandler()
-chandler.setLevel(logging.INFO)
-logger.addHandler(chandler)
 
+dev_infos = {'nid': None}
 
 ERROR_MAIL = u"""
 Problematic mail is attached.\n
@@ -258,7 +255,8 @@ def get_preview_pdf_path(config, mail_id):
     return os.path.join(output_dir, filename)
 
 
-def send_to_ws(config, headers, main_file_path, attachments, mail_id):
+def get_next_id(config):
+    """Get next id from counter file"""
     ws = config["webservice"]
     client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
     counter_dir = Path(ws['counter_dir'])
@@ -267,6 +265,28 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
         next_id = int(next_id_path.read_text()) + 1
     else:
         next_id = 1
+    if dev_mode:
+        if dev_infos['nid'] is None:
+            dev_infos['nid'] = next_id
+        else:
+            dev_infos['nid'] += 1
+            return dev_infos['nid'], client_id
+    return next_id, client_id
+
+
+def set_next_id(config, current_id):
+    """Set current id in counter file"""
+    ws = config["webservice"]
+    client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
+    counter_dir = Path(ws['counter_dir'])
+    next_id_path = counter_dir / client_id
+    current_id_txt = str(current_id) if six.PY3 else str(current_id).decode()
+    next_id_path.write_text(current_id_txt)
+
+
+def send_to_ws(config, headers, main_file_path, attachments, mail_id):
+    ws = config["webservice"]
+    next_id, client_id = get_next_id(config)
     external_id = "{0}{1:08d}".format(client_id, next_id)
 
     tar_path = Path('/tmp') / '{}.tar'.format(external_id)
@@ -291,50 +311,50 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
             attachment_info.size = len(attachment_contents)
             tar.addfile(tarinfo=attachment_info, fileobj=BytesIO(attachment_contents))
 
-    tar_content = tar_path.read_bytes()
-    now = datetime.now()
-    metadata = {
-        "external_id": external_id,
-        "client_id": client_id,
-        "scan_date": now.strftime("%Y-%m-%d"),
-        "scan_hour": now.strftime("%H:%M:%S"),
-        "user": "testuser",
-        "pc": "pc-scan01",
-        "creator": "scanner",
-        "filesize": len(tar_content),
-        "filename": tar_path.name,
-        "filemd5": md5(tar_content).hexdigest(),
-    }
+    if not dev_mode:  # we send to the ws
+        tar_content = tar_path.read_bytes()
+        now = datetime.now()
+        metadata = {
+            "external_id": external_id,
+            "client_id": client_id,
+            "scan_date": now.strftime("%Y-%m-%d"),
+            "scan_hour": now.strftime("%H:%M:%S"),
+            "user": "testuser",
+            "pc": "pc-scan01",
+            "creator": "scanner",
+            "filesize": len(tar_content),
+            "filename": tar_path.name,
+            "filemd5": md5(tar_content).hexdigest(),
+        }
 
-    auth = (ws['login'], ws['pass'])
-    proto = ws['port'] == '443' and 'https' or 'http'
-    metadata_url = '{proto}://{ws[host]}:{ws[port]}/dms_metadata/{client_id}/{ws[version]}'.format(
-        proto=proto,
-        ws=ws,
-        client_id=client_id,
-    )
-    metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
-    req_content = json.loads(metadata_req.content)
-    if not req_content['success'] or 'id' not in req_content:
-        msg = u"mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(mail_id, req_content['error_code'],
-                                                                             req_content['error'],
-                                                                             metadata).encode('utf8')
-        raise DmsMetadataError(msg)
-    response_id = req_content['id']
+        auth = (ws['login'], ws['pass'])
+        proto = ws['port'] == '443' and 'https' or 'http'
+        metadata_url = '{proto}://{ws[host]}:{ws[port]}/dms_metadata/{client_id}/{ws[version]}'.format(
+            proto=proto,
+            ws=ws,
+            client_id=client_id,
+        )
+        metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
+        req_content = json.loads(metadata_req.content)
+        if not req_content['success'] or 'id' not in req_content:
+            msg = u"mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(mail_id, req_content['error_code'],
+                                                                                 req_content['error'],
+                                                                                 metadata).encode('utf8')
+            raise DmsMetadataError(msg)
+        response_id = req_content['id']
 
-    upload_url = '{proto}://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(proto=proto, ws=ws,
-                                                                                         id=response_id)
-    files = {'filedata': ('archive.tar', tar_content, 'application/tar', {'Expires': '0'})}
-    upload_req = requests.post(upload_url, auth=auth, files=files)
-    req_content = json.loads(upload_req.content)
-    if not req_content['success']:
-        msg = u"mail_id: {}, code: '{}', error: '{}'".format(mail_id, req_content['error_code'],
-                                                             req_content.get('error') or
-                                                             req_content['message']).encode('utf8')
-        raise FileUploadError(msg)
+        upload_url = '{proto}://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(proto=proto, ws=ws,
+                                                                                             id=response_id)
+        files = {'filedata': ('archive.tar', tar_content, 'application/tar', {'Expires': '0'})}
+        upload_req = requests.post(upload_url, auth=auth, files=files)
+        req_content = json.loads(upload_req.content)
+        if not req_content['success']:
+            msg = u"mail_id: {}, code: '{}', error: '{}'".format(mail_id, req_content['error_code'],
+                                                                 req_content.get('error') or
+                                                                 req_content['message']).encode('utf8')
+            raise FileUploadError(msg)
 
-    next_id_txt = str(next_id) if six.PY3 else str(next_id).decode()
-    next_id_path.write_text(next_id_txt)
+        set_next_id(config, next_id)
 
 
 def process_mails():
@@ -444,9 +464,10 @@ def process_mails():
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace('.pdf', '.eml')
                 save_as_eml(main_file_path, parser.message)
-            attachments = modify_attachments(parser.attachments)
+            attachments = modify_attachments(mail_id, parser.attachments)
             send_to_ws(config, headers, main_file_path, attachments, mail_id)
-            handler.mark_mail_as_imported(mail_id)
+            if not dev_mode:
+                handler.mark_mail_as_imported(mail_id)
             imported += 1
         except Exception as e:
             logger.error(e, exc_info=True)

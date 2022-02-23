@@ -2,6 +2,8 @@
 from datetime import datetime
 from email import generator
 from email import utils
+from imio.email.dms import dev_mode
+from imio.email.dms import logger
 from io import BytesIO
 from PIL import Image
 
@@ -37,16 +39,18 @@ def reception_date(message):
     return r_date
 
 
-def modify_attachments(attachments):
+def modify_attachments(mail_id, attachments):
     """Reduce size attachments"""
     new_lst = []
     for dic in attachments:
-        # we pass inline image, often used in signatures. This image will be in generated pdf
+        # we pass inline image, often used in signature. This image will be in generated pdf
         if dic['type'].startswith('image/') and dic['disp'] == 'inline':
+            if dev_mode:
+                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['size']))
             continue
-#        if dic['type'].startswith('image/') and dic['size'] > 1000000:
-#         if dic['type'].startswith('image/'):
-#             img = Image.open(BytesIO(dic['content']))
-#             filename = dic['filename']
+        # if dic['type'].startswith('image/') and dic['size'] > 500000:
+        # if dic['type'].startswith('image/'):
+        #     img = Image.open(BytesIO(dic['content']))
+        #     filename = dic['filename']
         new_lst.append(dic)
     return new_lst
