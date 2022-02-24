@@ -386,7 +386,7 @@ def process_mails():
         # res, data = handler.connection.search(None, 'SUBJECT "JBC client"')
         # for mail_id in data[0].split():
         #      omail = handler.get_mail(mail_id)
-        #      parser = Parser(omail, dev_mode)
+        #      parser = Parser(omail, dev_mode, mail_id)
         #      headers = parser.headers
         #      amail = parser.message
         #      parsed = MailParser(omail)
@@ -399,7 +399,7 @@ def process_mails():
         if not mail_id:
             logger.error('Error: you must give an email id (--get_eml=25 by example)')
         mail = handler.get_mail(mail_id)
-        parsed = Parser(mail, dev_mode)
+        parsed = Parser(mail, dev_mode, mail_id)
         logger.info(parsed.headers)
         message = parsed.message
         filename = '{}.eml'.format(mail_id)
@@ -416,11 +416,13 @@ def process_mails():
         if not mail_id:
             logger.error('Error: you must give an email id (--gen_pdf=25 by example)')
         mail = handler.get_mail(mail_id)
-        parsed = Parser(mail, dev_mode)
+        parsed = Parser(mail, dev_mode, mail_id)
         logger.info(parsed.headers)
         pdf_path = get_preview_pdf_path(config, mail_id.encode('utf8'))
         logger.info('Generating {} file'.format(pdf_path))
-        parsed.generate_pdf(pdf_path)
+        payload, cid_parts_used = parsed.generate_pdf(pdf_path)
+        attachments = parsed.attachments(True, payload, cid_parts_used)
+        # m_at = modify_attachments(mail_id, attachments)
         handler.disconnect()
         lock.close()
         sys.exit()
@@ -441,7 +443,7 @@ def process_mails():
         mail = mail_info.mail
         main_file_path = get_preview_pdf_path(config, mail_id)
         try:
-            parser = Parser(mail, dev_mode)
+            parser = Parser(mail, dev_mode, mail_id)
             if parser.origin == 'Generic inbox':
                 mail_sender = parser.headers["From"][0][1]
                 notify_unsupported_origin(config, mail, mail_sender)
@@ -457,13 +459,17 @@ def process_mails():
                 ignored += 1
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
+            payload, cid_parts_used = None, set()
             try:
-                parser.generate_pdf(main_file_path)
+                payload, cid_parts_used = parser.generate_pdf(main_file_path)
+                pdf_gen = True
             except Exception as pdf_exc:
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace('.pdf', '.eml')
                 save_as_eml(main_file_path, parser.message)
-            attachments = modify_attachments(mail_id, parser.attachments)
+                pdf_gen = False
+            o_attachments = parser.attachments(pdf_gen, payload, cid_parts_used)
+            attachments = modify_attachments(mail_id, o_attachments)
             send_to_ws(config, headers, main_file_path, attachments, mail_id)
             if not dev_mode:
                 handler.mark_mail_as_imported(mail_id)
@@ -529,7 +535,7 @@ def clean_mails():
         if not mail:
             error += 1
             continue
-        parser = Parser(mail)
+        parser = Parser(mail, dev_mode, mail_id)
         logger.info(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
         out.append(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
         if doit:

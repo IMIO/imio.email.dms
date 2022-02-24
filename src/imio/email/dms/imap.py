@@ -110,7 +110,7 @@ class IMAPEmailHandler(object):
             mail = self.get_mail(mail_id)
             if not mail:
                 continue
-            parser = Parser(mail, dev_mode)
+            parser = Parser(mail, dev_mode, mail_id)
             parsed_orig_mail = MailParser(mail)
             r_date = reception_date(mail)
             if isinstance(mail_id, bytes):
