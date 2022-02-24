@@ -386,7 +386,7 @@ def process_mails():
         # res, data = handler.connection.search(None, 'SUBJECT "JBC client"')
         # for mail_id in data[0].split():
         #      omail = handler.get_mail(mail_id)
-        #      parser = Parser(omail)
+        #      parser = Parser(omail, dev_mode)
         #      headers = parser.headers
         #      amail = parser.message
         #      parsed = MailParser(omail)
@@ -399,7 +399,7 @@ def process_mails():
         if not mail_id:
             logger.error('Error: you must give an email id (--get_eml=25 by example)')
         mail = handler.get_mail(mail_id)
-        parsed = Parser(mail)
+        parsed = Parser(mail, dev_mode)
         logger.info(parsed.headers)
         message = parsed.message
         filename = '{}.eml'.format(mail_id)
@@ -416,7 +416,7 @@ def process_mails():
         if not mail_id:
             logger.error('Error: you must give an email id (--gen_pdf=25 by example)')
         mail = handler.get_mail(mail_id)
-        parsed = Parser(mail)
+        parsed = Parser(mail, dev_mode)
         logger.info(parsed.headers)
         pdf_path = get_preview_pdf_path(config, mail_id.encode('utf8'))
         logger.info('Generating {} file'.format(pdf_path))
@@ -436,13 +436,12 @@ def process_mails():
         sys.exit()
 
     imported = errors = unsupported = ignored = 0
-    # import ipdb; ipdb.set_trace()
     for mail_info in handler.get_waiting_emails():
         mail_id = mail_info.id
         mail = mail_info.mail
         main_file_path = get_preview_pdf_path(config, mail_id)
         try:
-            parser = Parser(mail)
+            parser = Parser(mail, dev_mode)
             if parser.origin == 'Generic inbox':
                 mail_sender = parser.headers["From"][0][1]
                 notify_unsupported_origin(config, mail, mail_sender)
