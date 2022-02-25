@@ -3,19 +3,23 @@ from datetime import datetime
 from email import generator
 from email import utils
 from imio.email.dms import dev_mode
-from imio.email.dms import logger
-from io import BytesIO
-from PIL import Image
+
+import six
+
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path  # noqa
 
 
 def safe_unicode(value, encoding='utf-8'):
     """Converts a value to unicode, even it is already a unicode string.
     """
-    if isinstance(value, unicode):
+    if isinstance(value, unicode):  # noqa
         return value
-    elif isinstance(value, basestring):
+    elif isinstance(value, basestring):  # noqa
         try:
-            value = unicode(value, encoding)
+            value = unicode(value, encoding)  # noqa
         except:
             value = value.decode('utf-8', 'replace')
     return value
@@ -39,18 +43,30 @@ def reception_date(message):
     return r_date
 
 
-def modify_attachments(mail_id, attachments):
-    """Reduce size attachments"""
-    new_lst = []
-    for dic in attachments:
-        # we pass inline image, often used in signature. This image will be in generated pdf
-        if dic['type'].startswith('image/') and dic['disp'] == 'inline':
-            if dev_mode:
-                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['size']))
-            continue
-        # if dic['type'].startswith('image/') and dic['size'] > 500000:
-        # if dic['type'].startswith('image/'):
-        #     img = Image.open(BytesIO(dic['content']))
-        #     filename = dic['filename']
-        new_lst.append(dic)
-    return new_lst
+def get_next_id(config, dev_infos):
+    """Get next id from counter file"""
+    ws = config["webservice"]
+    client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
+    counter_dir = Path(ws['counter_dir'])
+    next_id_path = counter_dir / client_id
+    if next_id_path.exists() and next_id_path.read_text():
+        next_id = int(next_id_path.read_text()) + 1
+    else:
+        next_id = 1
+    if dev_mode:
+        if dev_infos['nid'] is None:
+            dev_infos['nid'] = next_id
+        else:
+            dev_infos['nid'] += 1
+            return dev_infos['nid'], client_id
+    return next_id, client_id
+
+
+def set_next_id(config, current_id):
+    """Set current id in counter file"""
+    ws = config["webservice"]
+    client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
+    counter_dir = Path(ws['counter_dir'])
+    next_id_path = counter_dir / client_id
+    current_id_txt = str(current_id) if six.PY3 else str(current_id).decode()
+    next_id_path.write_text(current_id_txt)

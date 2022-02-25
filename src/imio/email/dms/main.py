@@ -27,10 +27,13 @@ from imio.email.dms import dev_mode
 from imio.email.dms import logger
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.imap import MailData
-from imio.email.dms.utils import modify_attachments
+from imio.email.dms.utils import get_next_id
 from imio.email.dms.utils import safe_unicode
+from imio.email.dms.utils import save_as_eml
+from imio.email.dms.utils import set_next_id
 from imio.email.parser.parser import Parser  # noqa
 from io import BytesIO
+from PIL import Image
 from smtplib import SMTP
 import configparser
 import imaplib
@@ -42,7 +45,6 @@ import six
 import sys
 import tarfile
 import zc.lockfile
-from imio.email.dms.utils import save_as_eml
 
 try:
     from pathlib import Path
@@ -255,38 +257,26 @@ def get_preview_pdf_path(config, mail_id):
     return os.path.join(output_dir, filename)
 
 
-def get_next_id(config):
-    """Get next id from counter file"""
-    ws = config["webservice"]
-    client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
-    counter_dir = Path(ws['counter_dir'])
-    next_id_path = counter_dir / client_id
-    if next_id_path.exists() and next_id_path.read_text():
-        next_id = int(next_id_path.read_text()) + 1
-    else:
-        next_id = 1
-    if dev_mode:
-        if dev_infos['nid'] is None:
-            dev_infos['nid'] = next_id
-        else:
-            dev_infos['nid'] += 1
-            return dev_infos['nid'], client_id
-    return next_id, client_id
-
-
-def set_next_id(config, current_id):
-    """Set current id in counter file"""
-    ws = config["webservice"]
-    client_id = "{0}Z{1}".format(ws['client_id'][:2], ws['client_id'][-4:])
-    counter_dir = Path(ws['counter_dir'])
-    next_id_path = counter_dir / client_id
-    current_id_txt = str(current_id) if six.PY3 else str(current_id).decode()
-    next_id_path.write_text(current_id_txt)
+def modify_attachments(mail_id, attachments):
+    """Remove inline attachments and educe size attachments"""
+    new_lst = []
+    for dic in attachments:
+        # we pass inline image, often used in signature. This image will be in generated pdf
+        if dic['type'].startswith('image/') and dic['disp'] == 'inline':
+            if dev_mode:
+                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['size']))
+            continue
+        # if dic['type'].startswith('image/') and dic['size'] > 500000:
+        if dic['type'].startswith('image/'):
+            img = Image.open(BytesIO(dic['content']))
+            filename = dic['filename']
+        new_lst.append(dic)
+    return new_lst
 
 
 def send_to_ws(config, headers, main_file_path, attachments, mail_id):
     ws = config["webservice"]
-    next_id, client_id = get_next_id(config)
+    next_id, client_id = get_next_id(config, dev_infos)
     external_id = "{0}{1:08d}".format(client_id, next_id)
 
     tar_path = Path('/tmp') / '{}.tar'.format(external_id)
