@@ -28,6 +28,7 @@ from imio.email.dms import logger
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.imap import MailData
 from imio.email.dms.utils import get_next_id
+from imio.email.dms.utils import get_reduced_size
 from imio.email.dms.utils import safe_unicode
 from imio.email.dms.utils import save_as_eml
 from imio.email.dms.utils import set_next_id
@@ -53,6 +54,7 @@ except ImportError:
 
 
 dev_infos = {'nid': None}
+img_size_limit = 1024
 
 ERROR_MAIL = u"""
 Problematic mail is attached.\n
@@ -264,12 +266,29 @@ def modify_attachments(mail_id, attachments):
         # we pass inline image, often used in signature. This image will be in generated pdf
         if dic['type'].startswith('image/') and dic['disp'] == 'inline':
             if dev_mode:
-                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['size']))
+                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['len']))
             continue
-        # if dic['type'].startswith('image/') and dic['size'] > 500000:
-        if dic['type'].startswith('image/'):
+        if dic['type'].startswith('image/') and dic['len'] > 100000:
             img = Image.open(BytesIO(dic['content']))
-            filename = dic['filename']
+            is_reduced, new_size = get_reduced_size(img.size, img_size_limit)
+            new_img = img
+            if is_reduced:
+                # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
+                if dev_mode:
+                    logger.info("{}: resized image '{}'".format(mail_id, dic['filename']))
+                new_img = img.resize(new_size, Image.BICUBIC)
+
+            new_bytes = BytesIO()
+            new_img.save(new_bytes, format=img.format, optimize=True, quality=75)
+            new_content = new_bytes.getvalue()
+            new_len = len(new_content)
+            if new_len < dic['len'] and float(new_len / dic['len']) < 0.9:  # more than 10% of difference
+                dic['filename'] = re.sub(r'(\.[\w]+)$', r'-(redimensionné)\1', dic['filename'])
+                if dev_mode:
+                    logger.info("{}: reduced image '{}' ({} => {})".format(mail_id, dic['filename'], dic['len'],
+                                                                           new_len))
+                dic['len'] = new_len
+                dic['content'] = new_content
         new_lst.append(dic)
     return new_lst
 
@@ -412,7 +431,7 @@ def process_mails():
         logger.info('Generating {} file'.format(pdf_path))
         payload, cid_parts_used = parsed.generate_pdf(pdf_path)
         attachments = parsed.attachments(True, cid_parts_used)
-        # m_at = modify_attachments(mail_id, attachments)
+        m_at = modify_attachments(mail_id, attachments)
         handler.disconnect()
         lock.close()
         sys.exit()

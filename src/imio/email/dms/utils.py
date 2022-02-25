@@ -62,6 +62,21 @@ def get_next_id(config, dev_infos):
     return next_id, client_id
 
 
+def get_reduced_size(size, img_size_limit):
+    """Returns a bool if size has been reduced and the new size tuple"""
+    greatest = 0
+    if size[0] < size[1]:
+        greatest = 1
+    if size[greatest] < img_size_limit:
+        return False, None
+    lowest = int(not bool(greatest))
+    percent = img_size_limit / float(size[greatest])
+    new_size = [0, 0]
+    new_size[greatest] = img_size_limit
+    new_size[lowest] = int((float(size[lowest]) * float(percent)))
+    return True, tuple(new_size)
+
+
 def set_next_id(config, current_id):
     """Set current id in counter file"""
     ws = config["webservice"]
