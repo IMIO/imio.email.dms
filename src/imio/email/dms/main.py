@@ -421,7 +421,7 @@ def process_mails():
         pdf_path = get_preview_pdf_path(config, mail_id.encode('utf8'))
         logger.info('Generating {} file'.format(pdf_path))
         payload, cid_parts_used = parsed.generate_pdf(pdf_path)
-        attachments = parsed.attachments(True, payload, cid_parts_used)
+        attachments = parsed.attachments(True, cid_parts_used)
         # m_at = modify_attachments(mail_id, attachments)
         handler.disconnect()
         lock.close()
@@ -459,7 +459,7 @@ def process_mails():
                 ignored += 1
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
-            payload, cid_parts_used = None, set()
+            cid_parts_used = set()
             try:
                 payload, cid_parts_used = parser.generate_pdf(main_file_path)
                 pdf_gen = True
@@ -468,7 +468,7 @@ def process_mails():
                 main_file_path = main_file_path.replace('.pdf', '.eml')
                 save_as_eml(main_file_path, parser.message)
                 pdf_gen = False
-            o_attachments = parser.attachments(pdf_gen, payload, cid_parts_used)
+            o_attachments = parser.attachments(pdf_gen, cid_parts_used)
             attachments = modify_attachments(mail_id, o_attachments)
             send_to_ws(config, headers, main_file_path, attachments, mail_id)
             if not dev_mode:
