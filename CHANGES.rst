@@ -5,8 +5,16 @@ Changelog
 0.11 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Corrected false 'inline' disposition attachments.
+  [sgeulette]
+- Do not include inline attachments
+  [sgeulette]
+- Reduced image attachments
+  [sgeulette]
+- Improved `--list_emails` output.
+  [sgeulette]
+- Added dev_mode flag
+  [sgeulette]
 
 0.10 (2022-02-17)
 -----------------
