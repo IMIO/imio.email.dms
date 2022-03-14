@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.11 (unreleased)
+0.11 (2022-03-14)
 -----------------
 
 - Corrected false 'inline' disposition attachments.
