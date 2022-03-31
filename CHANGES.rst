@@ -5,8 +5,8 @@ Changelog
 0.12 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Used correct recipient for ignored mail
+  [sgeulette]
 
 0.11 (2022-03-14)
 -----------------
