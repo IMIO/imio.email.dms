@@ -7,6 +7,8 @@ Changelog
 
 - Used correct recipient for ignored mail
   [sgeulette]
+- Used `smtp.send_message` to consider bcc
+  [sgeulette]
 
 0.11 (2022-03-14)
 -----------------

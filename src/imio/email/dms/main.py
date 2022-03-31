@@ -158,8 +158,7 @@ def notify_exception(config, mail_id, mail, error):
     msg.attach(attachment)
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
-    smtp.sendmail(sender, recipient, msg_content)
+    smtp.send_message(msg)
     smtp.quit()
 
 
@@ -183,7 +182,7 @@ def notify_unsupported_origin(config, mail, from_):
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
-    smtp.sendmail(sender, from_, msg_content)
+    smtp.send_message(msg)
     smtp.quit()
 
 
@@ -211,8 +210,6 @@ def notify_ignored(config, mail_id, mail, from_):
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     smtp.send_message(msg)
-    # msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
-    # smtp.sendmail(sender, from_, msg_content)
     smtp.quit()
 
 
@@ -232,8 +229,7 @@ def notify_result(config, subject, message):
     msg.attach(main_text)
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
-    smtp.sendmail(sender, recipient, msg_content)
+    smtp.send_message(msg)
     smtp.quit()
 
 
