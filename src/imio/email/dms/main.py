@@ -210,8 +210,9 @@ def notify_ignored(config, mail_id, mail, from_):
     msg.attach(attachment)
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
-    smtp.sendmail(sender, from_, msg_content)
+    smtp.send_message(msg)
+    # msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
+    # smtp.sendmail(sender, from_, msg_content)
     smtp.quit()
 
 
