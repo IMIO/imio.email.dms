@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>]  [--gen_pdf=<mail_id>]
+Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>] [--gen_pdf=<mail_id>]
                           [--get_eml_orig] [--stats]
 
 Arguments:
@@ -211,7 +211,7 @@ def notify_ignored(config, mail_id, mail, from_):
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
-    smtp.sendmail(sender, recipient, msg_content)
+    smtp.sendmail(sender, from_, msg_content)
     smtp.quit()
 
 
