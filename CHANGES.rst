@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.12 (unreleased)
+0.12 (2022-03-31)
 -----------------
 
 - Used correct recipient for ignored mail
