@@ -5,7 +5,9 @@ Changelog
 0.13 (unreleased)
 -----------------
 
-- Retried 5 times to upload
+- Retried 5 times to upload when webservice has an unknown response
+  [sgeulette]
+- Handled UnidentifiedImageError when opening image file to resize
   [sgeulette]
 
 0.12 (2022-03-31)

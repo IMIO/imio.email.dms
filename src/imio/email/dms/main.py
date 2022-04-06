@@ -35,6 +35,7 @@ from imio.email.dms.utils import set_next_id
 from imio.email.parser.parser import Parser  # noqa
 from io import BytesIO
 from PIL import Image
+from PIL import UnidentifiedImageError
 from smtplib import SMTP
 import configparser
 import imaplib
@@ -266,7 +267,11 @@ def modify_attachments(mail_id, attachments):
                 logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['len']))
             continue
         if dic['type'].startswith('image/') and dic['len'] > 100000:
-            img = Image.open(BytesIO(dic['content']))
+            try:
+                img = Image.open(BytesIO(dic['content']))
+            except UnidentifiedImageError as msg:
+                new_lst.append(dic)  # kept original image
+                continue
             is_reduced, new_size = get_reduced_size(img.size, img_size_limit)
             new_img = img
             if is_reduced:
