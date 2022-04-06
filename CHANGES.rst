@@ -5,8 +5,8 @@ Changelog
 0.13 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Retried 5 times to upload
+  [sgeulette]
 
 0.12 (2022-03-31)
 -----------------

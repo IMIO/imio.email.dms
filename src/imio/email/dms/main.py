@@ -342,6 +342,7 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
         )
         metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
         req_content = json.loads(metadata_req.content)
+        # {'message': 'Well done', 'external_id': '05Z507000024176', 'id': 2557054, 'success': True}
         if not req_content['success'] or 'id' not in req_content:
             msg = u"mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(mail_id, req_content['error_code'],
                                                                                  req_content['error'],
@@ -352,8 +353,15 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
         upload_url = '{proto}://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(proto=proto, ws=ws,
                                                                                              id=response_id)
         files = {'filedata': ('archive.tar', tar_content, 'application/tar', {'Expires': '0'})}
-        upload_req = requests.post(upload_url, auth=auth, files=files)
-        req_content = json.loads(upload_req.content)
+        ret_content = b''
+        i = 1
+        while ret_content == b'' and i <= 5:  # 5 attempts
+            upload_req = requests.post(upload_url, auth=auth, files=files)
+            ret_content = upload_req.content
+            if i > 1:
+                logger.info("{}: new attempt to upload file".format(mail_id))
+            i += 1
+        req_content = json.loads(ret_content)
         if not req_content['success']:
             msg = u"mail_id: {}, code: '{}', error: '{}'".format(mail_id, req_content['error_code'],
                                                                  req_content.get('error') or
