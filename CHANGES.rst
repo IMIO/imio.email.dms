@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.13 (unreleased)
+0.13 (2022-04-19)
 -----------------
 
 - Retried 5 times to upload when webservice has an unknown response
