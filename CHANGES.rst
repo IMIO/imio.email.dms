@@ -9,6 +9,8 @@ Changelog
   [sgeulette]
 - Handled UnidentifiedImageError when opening image file to resize
   [sgeulette]
+- Corrected UnicodeEncodeError when sending notification email
+  [sgeulette]
 
 0.12 (2022-03-31)
 -----------------

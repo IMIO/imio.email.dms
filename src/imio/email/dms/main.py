@@ -154,7 +154,7 @@ def notify_exception(config, mail_id, mail, error):
     msg.attach(main_text)
 
     attachment = MIMEBase("message", "rfc822")
-    attachment.set_payload(mail.as_string())
+    attachment.set_payload(mail.as_string(), 'utf8')
     attachment.add_header("Content-Disposition", "inline")
     msg.attach(attachment)
 
@@ -177,12 +177,11 @@ def notify_unsupported_origin(config, mail, from_):
     msg.attach(main_text)
 
     attachment = MIMEBase("message", "rfc822")
-    attachment.set_payload(mail.as_string())
+    attachment.set_payload(mail.as_string(), 'utf8')
     attachment.add_header("Content-Disposition", "inline")
     msg.attach(attachment)
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    msg_content = msg.as_string().encode("utf8") if six.PY3 else msg.as_string()
     smtp.send_message(msg)
     smtp.quit()
 
@@ -205,7 +204,7 @@ def notify_ignored(config, mail_id, mail, from_):
     msg.attach(main_text)
 
     attachment = MIMEBase("message", "rfc822")
-    attachment.set_payload(mail.as_string())
+    attachment.set_payload(mail.as_string(), 'utf8')
     attachment.add_header("Content-Disposition", "inline")
     msg.attach(attachment)
 
