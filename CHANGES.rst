@@ -44,7 +44,7 @@ Changelog
 -----------------
 
 - Removed newline characters from attachment filename in imio.email.parser.
- [sgeulette]
+  [sgeulette]
 
 0.9 (2022-02-17)
 ----------------
