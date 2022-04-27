@@ -475,7 +475,8 @@ def process_mails():
                 continue
             headers = parser.headers
             # we check if the pushing agent has a permitted email format
-            if not check_transferer(headers['Agent'][0][1], config['mailinfos'].get('sender-pattern', '.+')):
+            if 'Agent' in headers and not check_transferer(headers['Agent'][0][1],
+                                                           config['mailinfos'].get('sender-pattern', '.+')):
                 if not dev_mode:
                     handler.mark_mail_as_ignored(mail_id)
                 notify_ignored(config, mail_id, mail, headers['Agent'][0][1])

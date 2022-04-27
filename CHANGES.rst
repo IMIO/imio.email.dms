@@ -5,8 +5,12 @@ Changelog
 0.14 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Do not mark mail in dev_mode.
+  [sgeulette]
+- Handled image save when quality parameter is not compliant
+  [sgeulette]
+- Avoided error with x-forward
+  [sgeulette]
 
 0.13 (2022-04-19)
 -----------------
