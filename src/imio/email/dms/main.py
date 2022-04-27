@@ -274,13 +274,17 @@ def modify_attachments(mail_id, attachments):
             is_reduced, new_size = get_reduced_size(img.size, img_size_limit)
             new_img = img
             if is_reduced:
-                # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
                 if dev_mode:
                     logger.info("{}: resized image '{}'".format(mail_id, dic['filename']))
+                # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
                 new_img = img.resize(new_size, Image.BICUBIC)
 
             new_bytes = BytesIO()
-            new_img.save(new_bytes, format=img.format, optimize=True, quality=75)
+            # save the image in new_bytes
+            try:
+                new_img.save(new_bytes, format=img.format, optimize=True, quality=75)
+            except ValueError as err:
+                new_img.save(new_bytes, format=img.format, optimize=True)
             new_content = new_bytes.getvalue()
             new_len = len(new_content)
             if new_len < dic['len'] and float(new_len / dic['len']) < 0.9:  # more than 10% of difference
