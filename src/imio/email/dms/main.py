@@ -469,13 +469,15 @@ def process_mails():
             if parser.origin == 'Generic inbox':
                 mail_sender = parser.headers["From"][0][1]
                 notify_unsupported_origin(config, mail, mail_sender)
-                handler.mark_mail_as_unsupported(mail_id)
+                if not dev_mode:
+                    handler.mark_mail_as_unsupported(mail_id)
                 unsupported += 1
                 continue
             headers = parser.headers
             # we check if the pushing agent has a permitted email format
             if not check_transferer(headers['Agent'][0][1], config['mailinfos'].get('sender-pattern', '.+')):
-                handler.mark_mail_as_ignored(mail_id)
+                if not dev_mode:
+                    handler.mark_mail_as_ignored(mail_id)
                 notify_ignored(config, mail_id, mail, headers['Agent'][0][1])
                 # logger.error('Rejecting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
                 ignored += 1
@@ -499,7 +501,8 @@ def process_mails():
         except Exception as e:
             logger.error(e, exc_info=True)
             notify_exception(config, mail_id, mail, e)
-            handler.mark_mail_as_error(mail_id)
+            if not dev_mode:
+                handler.mark_mail_as_error(mail_id)
             errors += 1
 
     logger.info("{} emails have been imported. {} emails are unsupported. {} emails have caused an error. {} emails "
