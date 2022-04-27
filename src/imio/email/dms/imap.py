@@ -70,13 +70,14 @@ class IMAPEmailHandler(object):
         """Fetch all waiting messages"""
         args = [u"NOT KEYWORD imported", u"NOT KEYWORD unsupported", u"NOT KEYWORD error", u"NOT KEYWORD ignored"]
         # args = [u"KEYWORD imported"]
+        # args = ['SUBJECT "PERMANNE"']
         res, data = self.connection.search(None, *args)
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
         waiting = []
         for mail_id in data[0].split():
-            # if mail_id != b'3335': continue
+            # if mail_id != b'388': continue
             mail = self.get_mail(mail_id)
             if not mail:
                 continue
@@ -96,7 +97,10 @@ class IMAPEmailHandler(object):
 
     def list_last_emails(self, nb=20):
         """List last messages"""
-        res, data = self.connection.search(None, 'ALL')
+        # args = [u"NOT KEYWORD imported", u"NOT KEYWORD unsupported", u"NOT KEYWORD error", u"NOT KEYWORD ignored"]
+        # args = ['SUBJECT "PERMANNE"']
+        args = ['ALL']
+        res, data = self.connection.search(None, *args)
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
