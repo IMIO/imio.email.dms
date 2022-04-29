@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.14 (unreleased)
+0.14 (2022-04-29)
 -----------------
 
 - Do not mark mail in dev_mode.
