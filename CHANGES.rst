@@ -5,8 +5,8 @@ Changelog
 0.15 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Set locale time to avoid UTC time
+  [sgeulette]
 
 0.14 (2022-04-29)
 -----------------

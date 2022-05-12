@@ -2,6 +2,7 @@ FROM python:3.7-buster
 
 RUN apt-get update && apt-get install -y \
     dumb-init \
+    locales \
     vim \
     xfonts-75dpi \
     xfonts-base
@@ -18,6 +19,8 @@ ADD *.rst buildout.cfg entrypoint.sh requirements.txt setup.py sources.cfg versi
 ADD src /app/src
 
 WORKDIR /app
+
+RUN ln -sf /usr/share/zoneinfo/Europe/Brussels /etc/localtime
 
 RUN chmod +x /app/entrypoint.sh
 
