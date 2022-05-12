@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.15 (unreleased)
+0.15 (2022-05-12)
 -----------------
 
 - Set locale time to avoid UTC time
