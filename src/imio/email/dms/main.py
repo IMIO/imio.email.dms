@@ -405,14 +405,14 @@ def process_mails():
         # import ipdb; ipdb.set_trace()
         # handler.mark_reset_error('58')
         # handler.mark_reset_ignored('77')
-        # res, data = handler.connection.search(None, 'SUBJECT "JBC client"')
+        # res, data = handler.connection.search(None, 'SUBJECT "FAIGNART MARION"')
         # for mail_id in data[0].split():
         #      omail = handler.get_mail(mail_id)
         #      parser = Parser(omail, dev_mode, mail_id)
         #      headers = parser.headers
         #      amail = parser.message
         #      parsed = MailParser(omail)
-        #     logger.info(email['Subject'])
+        #     logger.info(headers['Subject'])
         handler.disconnect()
         lock.close()
         sys.exit()
