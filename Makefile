@@ -20,3 +20,8 @@ docker-image:
 
 lint:
 	pre-commit run --all
+
+.PHONY: cleanall
+cleanall:  ## Cleans all installed buildout files
+	rm -fr bin include lib local share develop-eggs downloads eggs parts .installed.cfg
+
