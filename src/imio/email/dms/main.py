@@ -468,10 +468,13 @@ def process_mails():
             parser = Parser(mail, dev_mode, mail_id)
             if parser.origin == 'Generic inbox':
                 mail_sender = parser.headers["From"][0][1]
-                notify_unsupported_origin(config, mail, mail_sender)
                 if not dev_mode:
                     handler.mark_mail_as_unsupported(mail_id)
                 unsupported += 1
+                try:
+                    notify_unsupported_origin(config, mail, mail_sender)
+                except Exception:  # better to continue than advise user
+                    pass
                 continue
             headers = parser.headers
             # we check if the pushing agent has a permitted email format
@@ -479,9 +482,12 @@ def process_mails():
                                                            config['mailinfos'].get('sender-pattern', '.+')):
                 if not dev_mode:
                     handler.mark_mail_as_ignored(mail_id)
-                notify_ignored(config, mail_id, mail, headers['Agent'][0][1])
                 # logger.error('Rejecting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
                 ignored += 1
+                try:
+                    notify_ignored(config, mail_id, mail, headers['Agent'][0][1])
+                except Exception:  # better to continue than advise user
+                    pass
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
             cid_parts_used = set()
