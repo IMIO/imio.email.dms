@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.16 (unreleased)
+0.16 (2022-06-07)
 -----------------
 
 - Used now email2pdf2.
