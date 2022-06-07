@@ -5,8 +5,10 @@ Changelog
 0.16 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Used now email2pdf2.
+  [sgeulette]
+- Handled exception when sending notification mail
+  [sgeulette]
 
 0.15 (2022-05-12)
 -----------------
