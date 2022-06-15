@@ -5,8 +5,8 @@ Changelog
 0.17 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Changed process_mails output to filter easierly.
+  [sgeulette]
 
 0.16 (2022-06-07)
 -----------------

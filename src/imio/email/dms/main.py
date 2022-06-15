@@ -459,8 +459,9 @@ def process_mails():
         logger.info('Ended at {}'.format(datetime.now()))
         sys.exit()
 
-    imported = errors = unsupported = ignored = 0
+    imported = errors = unsupported = ignored = total = 0
     for mail_info in handler.get_waiting_emails():
+        total += 1
         mail_id = mail_info.id
         mail = mail_info.mail
         main_file_path = get_preview_pdf_path(config, mail_id)
@@ -512,8 +513,11 @@ def process_mails():
                 handler.mark_mail_as_error(mail_id)
             errors += 1
 
-    logger.info("{} emails have been imported. {} emails are unsupported. {} emails have caused an error. {} emails "
-                "are ignored".format(imported, unsupported, errors, ignored))
+    if total:
+        logger.info("Treated {} emails: {} imported. {} unsupported. {} in error. {} ignored.".format(total,
+                    imported, unsupported, errors, ignored))
+    else:
+        logger.info("Treated no email.")
     handler.disconnect()
     lock.close()
 
