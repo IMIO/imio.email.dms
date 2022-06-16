@@ -2,7 +2,7 @@
 
 """
 Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>] [--gen_pdf=<mail_id>]
-                          [--get_eml_orig] [--stats]
+                          [--get_eml_orig] [--reset_flags=<mail_id>] [--stats]
 
 Arguments:
     FILE         config file
@@ -14,6 +14,7 @@ Options:
     --get_eml=<mail_id>     Get eml of original/contained email id.
     --get_eml_orig          Get eml of original email id (otherwise contained).
     --gen_pdf=<mail_id>     Generate pdf of contained email id.
+    --reset_flags=<mail_id> Reset all flags of email id
     --stats                 Get email stats following stats
 """
 from datetime import datetime
@@ -445,6 +446,14 @@ def process_mails():
         payload, cid_parts_used = parsed.generate_pdf(pdf_path)
         attachments = parsed.attachments(True, cid_parts_used)
         m_at = modify_attachments(mail_id, attachments)
+        handler.disconnect()
+        lock.close()
+        sys.exit()
+    elif arguments.get("--reset_flags"):
+        mail_id = arguments['--reset_flags']
+        if not mail_id:
+            logger.error('Error: you must give an email id (--reset_flags=25 by example)')
+        handler.mark_reset_all(mail_id)
         handler.disconnect()
         lock.close()
         sys.exit()
