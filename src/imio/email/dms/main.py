@@ -48,6 +48,7 @@ import six
 import sys
 import tarfile
 import zc.lockfile
+from PIL.Image import DecompressionBombError
 
 try:
     from pathlib import Path
@@ -269,7 +270,7 @@ def modify_attachments(mail_id, attachments):
         if dic['type'].startswith('image/') and dic['len'] > 100000:
             try:
                 img = Image.open(BytesIO(dic['content']))
-            except UnidentifiedImageError as msg:
+            except (UnidentifiedImageError, DecompressionBombError) as msg:
                 new_lst.append(dic)  # kept original image
                 continue
             is_reduced, new_size = get_reduced_size(img.size, img_size_limit)
