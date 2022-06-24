@@ -17,14 +17,17 @@ Options:
     --reset_flags=<mail_id> Reset all flags of email id
     --stats                 Get email stats following stats
 """
+
 from datetime import datetime
 from datetime import timedelta
 from docopt import docopt
+from email import iterators
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from imio.email.dms import dev_mode
+from imio.email.dms import email_policy
 from imio.email.dms import logger
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.imap import MailData
@@ -34,11 +37,14 @@ from imio.email.dms.utils import safe_unicode
 from imio.email.dms.utils import save_as_eml
 from imio.email.dms.utils import set_next_id
 from imio.email.parser.parser import Parser  # noqa
+from imio.email.parser.utils import stop  # noqa
 from io import BytesIO
 from PIL import Image
 from PIL import UnidentifiedImageError
 from smtplib import SMTP
+
 import configparser
+import email
 import imaplib
 import json
 import os
@@ -48,6 +54,7 @@ import six
 import sys
 import tarfile
 import zc.lockfile
+
 
 try:
     from pathlib import Path
@@ -254,7 +261,10 @@ def get_mailbox_infos(config):
 def get_preview_pdf_path(config, mail_id):
     mail_infos = config["mailinfos"]
     output_dir = mail_infos["pdf-output-dir"]
-    filename = "{0}.pdf".format(mail_id.decode("UTF-8"))
+    if isinstance(mail_id, bytes):
+        filename = "{0}.pdf".format(mail_id.decode("UTF-8"))
+    else:
+        filename = "{0}.pdf".format(mail_id)
     return os.path.join(output_dir, filename)
 
 
@@ -326,8 +336,9 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
             attachment_info = tarfile.TarInfo(name='/attachments/{}'.format(attachment['filename']))
             attachment_info.size = len(attachment_contents)
             tar.addfile(tarinfo=attachment_info, fileobj=BytesIO(attachment_contents))
-
-    if not dev_mode:  # we send to the ws
+    if dev_mode:
+        logger.info("tar file '{}' created".format(tar_path))
+    else:  # we send to the ws
         tar_content = tar_path.read_bytes()
         now = datetime.now()
         metadata = {
@@ -421,11 +432,12 @@ def process_mails():
     elif arguments.get("--get_eml"):
         mail_id = arguments['--get_eml']
         if not mail_id:
-            logger.error('Error: you must give an email id (--get_eml=25 by example)')
+            stop('Error: you must give an email id (--get_eml=25 by example)', logger)
         mail = handler.get_mail(mail_id)
         parsed = Parser(mail, dev_mode, mail_id)
         logger.info(parsed.headers)
         message = parsed.message
+        iterators._structure(message)
         filename = '{}.eml'.format(mail_id)
         if arguments.get('--get_eml_orig'):
             message = parsed.initial_message
@@ -445,15 +457,13 @@ def process_mails():
         pdf_path = get_preview_pdf_path(config, mail_id.encode('utf8'))
         logger.info('Generating {} file'.format(pdf_path))
         payload, cid_parts_used = parsed.generate_pdf(pdf_path)
-        attachments = parsed.attachments(True, cid_parts_used)
-        m_at = modify_attachments(mail_id, attachments)
         handler.disconnect()
         lock.close()
         sys.exit()
     elif arguments.get("--reset_flags"):
         mail_id = arguments['--reset_flags']
         if not mail_id:
-            logger.error('Error: you must give an email id (--reset_flags=25 by example)')
+            stop('Error: you must give an email id (--reset_flags=25 by example)', logger)
         handler.mark_reset_all(mail_id)
         handler.disconnect()
         lock.close()
@@ -477,8 +487,9 @@ def process_mails():
         main_file_path = get_preview_pdf_path(config, mail_id)
         try:
             parser = Parser(mail, dev_mode, mail_id)
+            headers = parser.headers
             if parser.origin == 'Generic inbox':
-                mail_sender = parser.headers["From"][0][1]
+                mail_sender = headers["From"][0][1]
                 if not dev_mode:
                     handler.mark_mail_as_unsupported(mail_id)
                 unsupported += 1
@@ -487,7 +498,6 @@ def process_mails():
                 except Exception:  # better to continue than advise user
                     pass
                 continue
-            headers = parser.headers
             # we check if the pushing agent has a permitted email format
             if 'Agent' in headers and not check_transferer(headers['Agent'][0][1],
                                                            config['mailinfos'].get('sender-pattern', '.+')):

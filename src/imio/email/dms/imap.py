@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from imio.email.dms import dev_mode
+from imio.email.dms import email_policy
 from imio.email.dms.utils import reception_date
 from imio.email.parser.parser import Parser  # noqa
 from mailparser import MailParser
@@ -63,7 +64,7 @@ class IMAPEmailHandler(object):
             except UnicodeDecodeError:
                 detection = chardet.detect(mail_body)
                 mail_body = mail_body.decode(detection["encoding"])
-        mail = email.message_from_string(mail_body)
+        mail = email.message_from_string(mail_body, policy=email_policy)
         return mail
 
     def get_waiting_emails(self):
