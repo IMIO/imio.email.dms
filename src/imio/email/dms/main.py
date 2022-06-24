@@ -633,8 +633,8 @@ def clean_mails():
         if doit:
             res, data = handler.connection.expunge()
             if res != "OK":
-                out.append(u"ERROR: Unable to deleted mails !!")
-                logger.error("Unable to deleted mails")
+                out.append(u"ERROR: Unable to delete mails !!")
+                logger.error("Unable to delete mails")
     handler.disconnect()
     out.append(u"{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
                deleted, ignored, error))
