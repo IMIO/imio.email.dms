@@ -2,7 +2,7 @@
 
 """
 Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>] [--gen_pdf=<mail_id>]
-                          [--get_eml_orig] [--reset_flags=<mail_id>] [--stats]
+                          [--get_eml_orig] [--reset_flags=<mail_id>] [--test_eml=<path>] [--stats]
 
 Arguments:
     FILE         config file
@@ -15,6 +15,7 @@ Options:
     --get_eml_orig          Get eml of original email id (otherwise contained).
     --gen_pdf=<mail_id>     Generate pdf of contained email id.
     --reset_flags=<mail_id> Reset all flags of email id
+    --test_eml=<path>       Test an eml handling
     --stats                 Get email stats following stats
 """
 
@@ -466,6 +467,36 @@ def process_mails():
             stop('Error: you must give an email id (--reset_flags=25 by example)', logger)
         handler.mark_reset_all(mail_id)
         handler.disconnect()
+        lock.close()
+        sys.exit()
+    elif arguments.get("--test_eml"):
+        handler.disconnect()
+        eml_path = arguments['--test_eml']
+        if not eml_path or not os.path.exists(eml_path):
+            stop("Error: you must give an existing eml path '{}' (--test_eml=123.eml by example)".format(eml_path),
+                 logger)
+        if not dev_mode:
+            stop('Error: You must activate dev mode to test an eml file', logger)
+        with open(eml_path) as fp:
+            mail = email.message_from_file(fp, policy=email_policy)
+        mail_id = os.path.splitext(os.path.basename(eml_path))[0]
+        mail.__setitem__("X-Forwarded-For", '0.0.0.0')  # to be considered as main mail
+        parser = Parser(mail, dev_mode, '')
+        headers = parser.headers
+        main_file_path = get_preview_pdf_path(config, mail_id)
+        cid_parts_used = set()
+        try:
+            payload, cid_parts_used = parser.generate_pdf(main_file_path)
+            pdf_gen = True
+        except Exception as pdf_exc:
+            main_file_path = main_file_path.replace('.pdf', '.eml')
+            save_as_eml(main_file_path, parser.message)
+            pdf_gen = False
+        # iterators._structure(mail)
+        o_attachments = parser.attachments(pdf_gen, cid_parts_used)
+        # [{tup[0]: tup[1] for tup in at.items() if tup[0] != 'content'} for at in o_attachments]
+        attachments = modify_attachments(mail_id, o_attachments)
+        send_to_ws(config, headers, main_file_path, attachments, mail_id)
         lock.close()
         sys.exit()
     elif arguments.get("--stats"):
