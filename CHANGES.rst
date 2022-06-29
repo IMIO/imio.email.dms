@@ -9,6 +9,8 @@ Changelog
   [sgeulette]
 - Added new option `reset_flags` for `process_mails` to reset all flags of an email id.
   [sgeulette]
+- Used default policy in parser
+  [sgeulette]
 
 0.16 (2022-06-07)
 -----------------
