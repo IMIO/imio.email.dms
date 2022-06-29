@@ -438,7 +438,7 @@ def process_mails():
         parsed = Parser(mail, dev_mode, mail_id)
         logger.info(parsed.headers)
         message = parsed.message
-        iterators._structure(message)
+        # iterators._structure(message)
         filename = '{}.eml'.format(mail_id)
         if arguments.get('--get_eml_orig'):
             message = parsed.initial_message
