@@ -11,6 +11,8 @@ Changelog
   [sgeulette]
 - Used default policy in parser
   [sgeulette]
+- Output rfc822 in parser
+  [sgeulette]
 
 0.16 (2022-06-07)
 -----------------
