@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.17 (unreleased)
+0.17 (2022-07-03)
 -----------------
 
 - Changed process_mails output to filter easierly.
