@@ -22,7 +22,6 @@ Options:
 from datetime import datetime
 from datetime import timedelta
 from docopt import docopt
-from email import iterators
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -39,6 +38,7 @@ from imio.email.dms.utils import save_as_eml
 from imio.email.dms.utils import set_next_id
 from imio.email.parser.parser import Parser  # noqa
 from imio.email.parser.utils import stop  # noqa
+from imio.email.parser.utils import structure  # noqa
 from io import BytesIO
 from PIL import Image
 from PIL import UnidentifiedImageError
@@ -438,7 +438,7 @@ def process_mails():
         parsed = Parser(mail, dev_mode, mail_id)
         logger.info(parsed.headers)
         message = parsed.message
-        # iterators._structure(message)
+        # structure(message)
         filename = '{}.eml'.format(mail_id)
         if arguments.get('--get_eml_orig'):
             message = parsed.initial_message
@@ -492,7 +492,7 @@ def process_mails():
             main_file_path = main_file_path.replace('.pdf', '.eml')
             save_as_eml(main_file_path, parser.message)
             pdf_gen = False
-        # iterators._structure(mail)
+        # structure(mail)
         o_attachments = parser.attachments(pdf_gen, cid_parts_used)
         # [{tup[0]: tup[1] for tup in at.items() if tup[0] != 'content'} for at in o_attachments]
         attachments = modify_attachments(mail_id, o_attachments)
