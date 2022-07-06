@@ -56,7 +56,6 @@ import sys
 import tarfile
 import zc.lockfile
 
-
 try:
     from pathlib import Path
 except ImportError:
@@ -65,6 +64,7 @@ except ImportError:
 
 dev_infos = {'nid': None}
 img_size_limit = 1024
+# originally 89478485 => blocks at > 13300 pixels square
 Image.MAX_IMAGE_PIXELS = None
 
 ERROR_MAIL = u"""
@@ -283,6 +283,8 @@ def modify_attachments(mail_id, attachments):
                 img = Image.open(BytesIO(dic['content']))
             except UnidentifiedImageError as msg:
                 new_lst.append(dic)  # kept original image
+                continue
+            except Image.DecompressionBombError as msg:  # never append because Image.MAX_IMAGE_PIXELS is set to None
                 continue
             is_reduced, new_size = get_reduced_size(img.size, img_size_limit)
             new_img = img
