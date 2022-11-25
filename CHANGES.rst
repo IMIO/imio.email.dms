@@ -5,8 +5,8 @@ Changelog
 0.18 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Handled specifically Apple Mail forward with image in content (parser modification).
+  [sgeulette]
 
 0.17 (2022-07-03)
 -----------------
