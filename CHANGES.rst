@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.18 (unreleased)
+0.18 (2022-11-28)
 -----------------
 
 - Handled specifically Apple Mail forward with image in content (parser modification).
