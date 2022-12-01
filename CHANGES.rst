@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.19 (unreleased)
+0.19 (2022-12-01)
 -----------------
 
 - Handled specifically IBM Notes forward (parser modification).
