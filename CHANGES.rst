@@ -5,8 +5,8 @@ Changelog
 0.19 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Handled specifically IBM Notes forward (parser modification).
+  [sgeulette]
 
 0.18 (2022-11-28)
 -----------------
