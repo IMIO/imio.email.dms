@@ -286,6 +286,7 @@ def modify_attachments(mail_id, attachments):
                 continue
             except Image.DecompressionBombError as msg:  # never append because Image.MAX_IMAGE_PIXELS is set to None
                 continue
+            exif = img.info['exif']
             is_reduced, new_size = get_reduced_size(img.size, img_size_limit)
             new_img = img
             if is_reduced:
@@ -297,9 +298,9 @@ def modify_attachments(mail_id, attachments):
             new_bytes = BytesIO()
             # save the image in new_bytes
             try:
-                new_img.save(new_bytes, format=img.format, optimize=True, quality=75)
+                new_img.save(new_bytes, format=img.format, optimize=True, quality=75, exif=exif)
             except ValueError as err:
-                new_img.save(new_bytes, format=img.format, optimize=True)
+                new_img.save(new_bytes, format=img.format, optimize=True, exif=exif)
             new_content = new_bytes.getvalue()
             new_len = len(new_content)
             if new_len < dic['len'] and float(new_len / dic['len']) < 0.9:  # more than 10% of difference
