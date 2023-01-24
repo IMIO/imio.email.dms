@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.20 (unreleased)
+0.20 (2023-01-24)
 -----------------
 
 - Kept exif information from original resized image.
