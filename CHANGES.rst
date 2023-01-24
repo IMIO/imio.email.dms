@@ -5,8 +5,8 @@ Changelog
 0.20 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Kept exif information from original resized image.
+  [sgeulette]
 
 0.19 (2022-12-01)
 -----------------
