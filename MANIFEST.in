@@ -12,4 +12,4 @@ include buildout.cfg
 include config.ini
 include sources.cfg
 include versions.cfg
-
+exclude scripts/*.*
