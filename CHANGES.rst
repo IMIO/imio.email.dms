@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.21 (unreleased)
+0.21 (2023-01-25)
 -----------------
 
 - Changed orientation of image following exif information.
