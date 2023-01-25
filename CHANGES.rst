@@ -5,8 +5,8 @@ Changelog
 0.21 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Changed orientation of image following exif information.
+  [sgeulette]
 
 0.20 (2023-01-24)
 -----------------

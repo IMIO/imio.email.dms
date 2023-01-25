@@ -41,6 +41,7 @@ from imio.email.parser.utils import stop  # noqa
 from imio.email.parser.utils import structure  # noqa
 from io import BytesIO
 from PIL import Image
+from PIL import ImageOps
 from PIL import UnidentifiedImageError
 from smtplib import SMTP
 
@@ -66,6 +67,7 @@ dev_infos = {'nid': None}
 img_size_limit = 1024
 # originally 89478485 => blocks at > 13300 pixels square
 Image.MAX_IMAGE_PIXELS = None
+EXIF_ORIENTATION = 0x0112
 
 ERROR_MAIL = u"""
 Problematic mail is attached.\n
@@ -278,7 +280,8 @@ def modify_attachments(mail_id, attachments):
             if dev_mode:
                 logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['len']))
             continue
-        if dic['type'].startswith('image/') and dic['len'] > 100000:
+        if dic['type'].startswith('image/'):
+            orient_mod = size_mod = False
             try:
                 img = Image.open(BytesIO(dic['content']))
             except UnidentifiedImageError as msg:
@@ -286,30 +289,44 @@ def modify_attachments(mail_id, attachments):
                 continue
             except Image.DecompressionBombError as msg:  # never append because Image.MAX_IMAGE_PIXELS is set to None
                 continue
-            exif = img.info['exif']
-            is_reduced, new_size = get_reduced_size(img.size, img_size_limit)
+            exif = img.getexif()
+            orient = exif.get(EXIF_ORIENTATION, 0)
             new_img = img
-            if is_reduced:
-                if dev_mode:
-                    logger.info("{}: resized image '{}'".format(mail_id, dic['filename']))
-                # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
-                new_img = img.resize(new_size, Image.BICUBIC)
+            # if problem, si ImageMagik use https://github.com/IMIO/appy/blob/master/appy/pod/doc_importers.py#L545
+            if orient and orient != 1:
+                try:
+                    new_img = ImageOps.exif_transpose(img)
+                    orient_mod = True
+                    if dev_mode:
+                        logger.info("{}: reoriented image '{}' from {}".format(mail_id, dic['filename'], orient))
+                except Exception as msg:
+                    pass
+            if dic['len'] > 100000:
+                is_reduced, new_size = get_reduced_size(new_img.size, img_size_limit)
+                if is_reduced:
+                    if dev_mode:
+                        logger.info("{}: resized image '{}'".format(mail_id, dic['filename']))
+                    # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
+                    new_img = new_img.resize(new_size, Image.BICUBIC)
+                    size_mod = True
 
-            new_bytes = BytesIO()
-            # save the image in new_bytes
-            try:
-                new_img.save(new_bytes, format=img.format, optimize=True, quality=75, exif=exif)
-            except ValueError as err:
-                new_img.save(new_bytes, format=img.format, optimize=True, exif=exif)
-            new_content = new_bytes.getvalue()
-            new_len = len(new_content)
-            if new_len < dic['len'] and float(new_len / dic['len']) < 0.9:  # more than 10% of difference
-                dic['filename'] = re.sub(r'(\.[\w]+)$', r'-(redimensionné)\1', dic['filename'])
-                if dev_mode:
-                    logger.info("{}: reduced image '{}' ({} => {})".format(mail_id, dic['filename'], dic['len'],
+            if size_mod or orient_mod:
+                new_bytes = BytesIO()
+                # save the image in new_bytes
+                try:
+                    new_img.save(new_bytes, format=img.format, optimize=True, quality=75)
+                except ValueError as err:
+                    new_img.save(new_bytes, format=img.format, optimize=True)
+                new_content = new_bytes.getvalue()
+                new_len = len(new_content)
+                if orient_mod or (new_len < dic['len'] and float(new_len / dic['len']) < 0.9):
+                    #                                      more than 10% of difference
+                    dic['filename'] = re.sub(r'(\.[\w]+)$', r'-(redimensionné)\1', dic['filename'])
+                    if dev_mode:
+                        logger.info("{}: new image '{}' ({} => {})".format(mail_id, dic['filename'], dic['len'],
                                                                            new_len))
-                dic['len'] = new_len
-                dic['content'] = new_content
+                    dic['len'] = new_len
+                    dic['content'] = new_content
         new_lst.append(dic)
     return new_lst
 
