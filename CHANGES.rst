@@ -7,6 +7,8 @@ Changelog
 
 - Changed orientation of image following exif information.
   [sgeulette]
+- Added pil test script
+  [sgeulette]
 
 0.20 (2023-01-24)
 -----------------
