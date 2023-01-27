@@ -5,8 +5,8 @@ Changelog
 0.22 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Prefixed gotten eml with mailbox login.
+  [sgeulette]
 
 0.21 (2023-01-25)
 -----------------

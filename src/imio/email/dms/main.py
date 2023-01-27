@@ -460,6 +460,8 @@ def process_mails():
         message = parsed.message
         # structure(message)
         filename = '{}.eml'.format(mail_id)
+        if login:
+            filename = '{}_{}'.format(login, filename)
         if arguments.get('--get_eml_orig'):
             message = parsed.initial_message
             filename = '{}_o.eml'.format(mail_id)
