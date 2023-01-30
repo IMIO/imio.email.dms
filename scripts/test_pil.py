@@ -8,10 +8,7 @@ import re
 import sys
 
 
-filename = '/home/sge/Documents/imio/docs/CLIENTS/Flémalle, CPAS/img_docs_20230123_133150-(redimensionné) bad.jpg'
 filename = '/home/sge/Documents/imio/docs/CLIENTS/Flémalle, CPAS/img_orig_20230123_133150.jpg'
-filename = '/home/sge/Documents/imio/docs/CLIENTS/Flémalle, CPAS/20140501_Gene2.jpeg'
-filename = '/home/sge/Documents/imio/docs/CLIENTS/Flémalle, CPAS/20140501_Gene2_mini.jpg'
 
 EXIF_ORIENTATION = 0x0112
 img_size_limit = 1024
