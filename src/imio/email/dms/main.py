@@ -464,7 +464,7 @@ def process_mails():
             filename = '{}_{}'.format(login, filename)
         if arguments.get('--get_eml_orig'):
             message = parsed.initial_message
-            filename = '{}_o.eml'.format(mail_id)
+            filename = filename.replace('.eml', '_o.eml')
         logger.info('Writing {} file'.format(filename))
         save_as_eml(filename, message)
         handler.disconnect()
