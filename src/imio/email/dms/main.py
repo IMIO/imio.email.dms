@@ -68,6 +68,7 @@ img_size_limit = 1024
 # originally 89478485 => blocks at > 13300 pixels square
 Image.MAX_IMAGE_PIXELS = None
 EXIF_ORIENTATION = 0x0112
+MAX_SIZE_ATTACH = 20000000
 
 ERROR_MAIL = u"""
 Problematic mail is attached.\n
@@ -76,6 +77,7 @@ IMAP login : {1}\n
 mail id : {2}\n
 Corresponding exception : {3}
 {4}\n
+{5}\n
 """
 
 UNSUPPORTED_ORIGIN_EMAIL = u"""
@@ -96,6 +98,7 @@ If you are using Mozilla Thunderbird:\n
 - Send the opened draft to the GED import address.\n
 \n
 Please excuse us for the inconvenience.\n
+{0}\n
 """
 
 UNSUPPORTED_ORIGIN_EMAIL = u"""
@@ -114,6 +117,7 @@ Si vous utilisez Mozilla Thunderbird:\n
 - Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
 \n
 Cordialement.\n
+{0}\n
 """
 
 IGNORED_MAIL = u"""
@@ -125,6 +129,7 @@ Client ID : {0}
 IMAP login : {1}
 mail id : {2}
 pattern : "caché"
+{4}\n
 """
 
 RESULT_MAIL = u"""
@@ -140,6 +145,19 @@ class DmsMetadataError(Exception):
 
 class FileUploadError(Exception):
     """ The response from the webservice file_upload route is not successful """
+
+
+def get_mail_len_status(mail, additional):
+    """Returns some info following mail length regarding max length.
+
+    :param mail: mail object
+    :param additional: unicode message to return if mail is bigger than max size
+    :return: mail as string, bool indicating if len is smaller, message for the user
+    """
+    mail_string = mail.as_string()
+    if len(mail_string) > MAX_SIZE_ATTACH:
+        return mail_string, False, additional
+    return mail_string, True, u''
 
 
 def notify_exception(config, mail_id, mail, error):
@@ -162,13 +180,17 @@ def notify_exception(config, mail_id, mail, error):
             error_msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
         except Exception:
             error_msg = error.reason
-    main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg), "plain")
+
+    mail_string, len_ok, additional = get_mail_len_status(mail,
+                                                          u'The attachment is too big: so it cannot be sent by mail !')
+    main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg, additional), "plain")
     msg.attach(main_text)
 
-    attachment = MIMEBase("message", "rfc822")
-    attachment.set_payload(mail.as_string(), 'utf8')
-    attachment.add_header("Content-Disposition", "inline")
-    msg.attach(attachment)
+    if len_ok:
+        attachment = MIMEBase("message", "rfc822")
+        attachment.set_payload(mail_string, 'utf8')
+        attachment.add_header("Content-Disposition", "inline")
+        msg.attach(attachment)
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     smtp.send_message(msg)
@@ -185,13 +207,16 @@ def notify_unsupported_origin(config, mail, from_):
     msg["From"] = sender
     msg["To"] = from_
 
-    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL, "plain")
+    mail_string, len_ok, additional = get_mail_len_status(
+        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
+    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional), "plain")
     msg.attach(main_text)
 
-    attachment = MIMEBase("message", "rfc822")
-    attachment.set_payload(mail.as_string(), 'utf8')
-    attachment.add_header("Content-Disposition", "inline")
-    msg.attach(attachment)
+    if len_ok:
+        attachment = MIMEBase("message", "rfc822")
+        attachment.set_payload(mail_string, 'utf8')
+        attachment.add_header("Content-Disposition", "inline")
+        msg.attach(attachment)
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     smtp.send_message(msg)
@@ -211,14 +236,17 @@ def notify_ignored(config, mail_id, mail, from_):
     msg["To"] = from_
     msg["Bcc"] = recipient
 
+    mail_string, len_ok, additional = get_mail_len_status(
+        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
 #    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
-    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_), "plain")
+    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, additional), "plain")
     msg.attach(main_text)
 
-    attachment = MIMEBase("message", "rfc822")
-    attachment.set_payload(mail.as_string(), 'utf8')
-    attachment.add_header("Content-Disposition", "inline")
-    msg.attach(attachment)
+    if len_ok:
+        attachment = MIMEBase("message", "rfc822")
+        attachment.set_payload(mail_string, 'utf8')
+        attachment.add_header("Content-Disposition", "inline")
+        msg.attach(attachment)
 
     smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
     smtp.send_message(msg)
@@ -454,19 +482,27 @@ def process_mails():
         mail_id = arguments['--get_eml']
         if not mail_id:
             stop('Error: you must give an email id (--get_eml=25 by example)', logger)
-        mail = handler.get_mail(mail_id)
-        parsed = Parser(mail, dev_mode, mail_id)
-        logger.info(parsed.headers)
-        message = parsed.message
-        # structure(message)
-        filename = '{}.eml'.format(mail_id)
-        if login:
-            filename = '{}_{}'.format(login, filename)
-        if arguments.get('--get_eml_orig'):
-            message = parsed.initial_message
-            filename = filename.replace('.eml', '_o.eml')
-        logger.info('Writing {} file'.format(filename))
-        save_as_eml(filename, message)
+        try:
+            mail = handler.get_mail(mail_id)
+            parsed = Parser(mail, dev_mode, mail_id)
+            logger.info(parsed.headers)
+            message = parsed.message
+            # structure(message)
+            filename = '{}.eml'.format(mail_id)
+            if login:
+                filename = '{}_{}'.format(login, filename)
+            if arguments.get('--get_eml_orig'):
+                message = parsed.initial_message
+                filename = filename.replace('.eml', '_o.eml')
+            logger.info('Writing {} file'.format(filename))
+            # o_attachments = parsed.attachments(False, set())
+            # attachments = modify_attachments(mail_id, o_attachments)
+            save_as_eml(filename, message)
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            # notify_exception(config, mail_id, mail, e)
+            if not dev_mode:
+                handler.mark_mail_as_error(mail_id)
         handler.disconnect()
         lock.close()
         sys.exit()

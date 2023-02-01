@@ -7,13 +7,15 @@ Changelog
 
 - Prefixed gotten eml with mailbox login.
   [sgeulette]
+- Set a size limit to attach the notified email: so the output email can be sent.
+  [sgeulette
 
 0.21 (2023-01-25)
 -----------------
 
 - Changed orientation of image following exif information.
   [sgeulette]
-- Added pil test script
+- Added pil test script.
   [sgeulette]
 
 0.20 (2023-01-24)
