@@ -122,7 +122,7 @@ class IMAPEmailHandler(object):
                 mail_id = mail_id.decode()
                 flags = [fl.decode() for fl in flags]
             lst.append(u"{}, {}: '{}', '{}', '{}', '{}', {}".format(r_date, mail_id, parsed_orig_mail.headers['From'],
-                       parsed_orig_mail.subject, parser.parsed_message.headers['From'], parser.headers['Subject'],
+                       parsed_orig_mail.subject, parser.parsed_message.headers.get('From'), parser.headers['Subject'],
                        flags))
                        # parser.message.get('message-id'), flags))
             logger.info(lst[-1])
