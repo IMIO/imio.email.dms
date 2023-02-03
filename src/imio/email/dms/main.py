@@ -44,6 +44,7 @@ from PIL import Image
 from PIL import ImageOps
 from PIL import UnidentifiedImageError
 from smtplib import SMTP
+from xml.etree.ElementTree import ParseError
 
 import configparser
 import email
@@ -317,8 +318,13 @@ def modify_attachments(mail_id, attachments):
                 continue
             except Image.DecompressionBombError as msg:  # never append because Image.MAX_IMAGE_PIXELS is set to None
                 continue
-            exif = img.getexif()
-            orient = exif.get(EXIF_ORIENTATION, 0)
+            try:
+                exif = img.getexif()
+                orient = exif.get(EXIF_ORIENTATION, 0)
+            except ParseError:
+                logger.warning("{}: error getting exif info for image '{}', ignored orientation".format(
+                    mail_id, dic['filename']))
+                orient = 0
             new_img = img
             # if problem, si ImageMagik use https://github.com/IMIO/appy/blob/master/appy/pod/doc_importers.py#L545
             if orient and orient != 1:

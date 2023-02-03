@@ -8,7 +8,9 @@ Changelog
 - Prefixed gotten eml with mailbox login.
   [sgeulette]
 - Set a size limit to attach the notified email: so the output email can be sent.
-  [sgeulette
+  [sgeulette]
+- Handled an exif parsing error
+  [sgeulette]
 
 0.21 (2023-01-25)
 -----------------
