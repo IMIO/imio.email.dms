@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.22 (unreleased)
+0.22 (2023-02-03)
 -----------------
 
 - Prefixed gotten eml with mailbox login.
