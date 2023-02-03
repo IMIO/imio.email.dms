@@ -4,6 +4,7 @@ from email import generator
 from email import utils
 from imio.email.dms import dev_mode
 
+import os
 import six
 
 try:
@@ -75,6 +76,18 @@ def get_reduced_size(size, img_size_limit):
     new_size[greatest] = img_size_limit
     new_size[lowest] = int((float(size[lowest]) * float(percent)))
     return True, tuple(new_size)
+
+
+def get_unique_name(filename, files):
+    """Get a filename and eventually rename it so it is unique in files list"""
+    new_filename = filename
+    counter = 1
+    filename, extension = os.path.splitext(filename)
+    while new_filename in files:
+        new_filename = '{} ({}){}'.format(filename, counter, extension)
+        counter += 1
+    files.append(new_filename)
+    return new_filename
 
 
 def set_next_id(config, current_id):

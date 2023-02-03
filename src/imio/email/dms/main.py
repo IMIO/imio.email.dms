@@ -33,6 +33,7 @@ from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.imap import MailData
 from imio.email.dms.utils import get_next_id
 from imio.email.dms.utils import get_reduced_size
+from imio.email.dms.utils import get_unique_name
 from imio.email.dms.utils import safe_unicode
 from imio.email.dms.utils import save_as_eml
 from imio.email.dms.utils import set_next_id
@@ -386,9 +387,11 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
         tar.addfile(tarinfo=metadata_info, fileobj=BytesIO(metadata_contents))
 
         # 3) every attachment file
+        files = []
         for attachment in attachments:
             attachment_contents = attachment['content']
-            attachment_info = tarfile.TarInfo(name='/attachments/{}'.format(attachment['filename']))
+            attachment_info = tarfile.TarInfo(name='/attachments/{}'.format(
+                get_unique_name(attachment['filename'], files)))
             attachment_info.size = len(attachment_contents)
             tar.addfile(tarinfo=attachment_info, fileobj=BytesIO(attachment_contents))
     if dev_mode:

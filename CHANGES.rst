@@ -11,6 +11,8 @@ Changelog
   [sgeulette]
 - Handled an exif parsing error
   [sgeulette]
+- Renamed filenames in tar when already in
+  [sgeulette]
 
 0.21 (2023-01-25)
 -----------------
