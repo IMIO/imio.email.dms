@@ -106,7 +106,7 @@ Please excuse us for the inconvenience.\n
 UNSUPPORTED_ORIGIN_EMAIL = u"""
 Cher utilisateur d'iA.Docs,
 
-Le transfert de l'email attaché a été rejeté car il n'a pas été transféré correctement.\n
+Le transfert de l'email attaché ("{1}") a été rejeté car il n'a pas été transféré correctement.\n
 Veuillez refaire le transfert du mail original en transférant "en tant que pièce jointe".\n
 Si vous utilisez Microsoft Outlook:\n
 - Dans le ruban, cliquez sur la flèche du ménu déroulant située sur le bouton de transfert\n
@@ -199,9 +199,10 @@ def notify_exception(config, mail_id, mail, error):
     smtp.quit()
 
 
-def notify_unsupported_origin(config, mail, from_):
+def notify_unsupported_origin(config, mail, headers):
     smtp_infos = config["smtp"]
     sender = smtp_infos["sender"]
+    from_ = headers["From"][0][1]
 
     msg = MIMEMultipart()
     msg["Subject"] = "Error importing email into iA.docs"
@@ -211,7 +212,7 @@ def notify_unsupported_origin(config, mail, from_):
 
     mail_string, len_ok, additional = get_mail_len_status(
         mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
-    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional), "plain")
+    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional, safe_unicode(headers['Subject'])), "plain")
     msg.attach(main_text)
 
     if len_ok:
@@ -587,12 +588,11 @@ def process_mails():
             parser = Parser(mail, dev_mode, mail_id)
             headers = parser.headers
             if parser.origin == 'Generic inbox':
-                mail_sender = headers["From"][0][1]
                 if not dev_mode:
                     handler.mark_mail_as_unsupported(mail_id)
                 unsupported += 1
                 try:
-                    notify_unsupported_origin(config, mail, mail_sender)
+                    notify_unsupported_origin(config, mail, headers)
                 except Exception:  # better to continue than advise user
                     pass
                 continue

@@ -5,8 +5,10 @@ Changelog
 0.23 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Added email subject in unsupported message.
+  [sgeulette]
+- Added MS Exchange "resent-from" in parser
+  [sgeulette]
 
 0.22 (2023-02-03)
 -----------------
