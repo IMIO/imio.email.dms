@@ -212,7 +212,7 @@ def notify_unsupported_origin(config, mail, headers):
 
     mail_string, len_ok, additional = get_mail_len_status(
         mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
-    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional, safe_unicode(headers['Subject'])), "plain")
+    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional, headers['Subject']), "plain")
     msg.attach(main_text)
 
     if len_ok:

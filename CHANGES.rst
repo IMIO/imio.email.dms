@@ -5,8 +5,8 @@ Changelog
 0.24 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Corrected unicode error when creating unsupported email.
+  [sgeulette]
 
 0.23 (2023-05-23)
 -----------------
