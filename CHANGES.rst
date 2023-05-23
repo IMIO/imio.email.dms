@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.23 (unreleased)
+0.23 (2023-05-23)
 -----------------
 
 - Added email subject in unsupported message.
