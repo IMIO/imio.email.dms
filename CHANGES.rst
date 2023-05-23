@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.24 (unreleased)
+0.24 (2023-05-23)
 -----------------
 
 - Corrected unicode error when creating unsupported email.
