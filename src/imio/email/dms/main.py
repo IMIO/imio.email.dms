@@ -42,6 +42,7 @@ from imio.email.parser.utils import stop  # noqa
 from imio.email.parser.utils import structure  # noqa
 from io import BytesIO
 from PIL import Image
+from PIL import ImageFile
 from PIL import ImageOps
 from PIL import UnidentifiedImageError
 from smtplib import SMTP
@@ -69,6 +70,8 @@ dev_infos = {'nid': None}
 img_size_limit = 1024
 # originally 89478485 => blocks at > 13300 pixels square
 Image.MAX_IMAGE_PIXELS = None
+# OSError: broken data stream when reading image file
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 EXIF_ORIENTATION = 0x0112
 MAX_SIZE_ATTACH = 20000000
 
@@ -533,6 +536,7 @@ def process_mails():
         mail_id = arguments['--reset_flags']
         if not mail_id:
             stop('Error: you must give an email id (--reset_flags=25 by example)', logger)
+        # handler.mark_mail_as_error(mail_id)
         handler.mark_reset_all(mail_id)
         handler.disconnect()
         lock.close()
