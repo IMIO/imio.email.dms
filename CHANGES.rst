@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.25 (unreleased)
+0.25 (2023-08-24)
 -----------------
 
 - Handled "OSError: broken data stream when reading image file"
