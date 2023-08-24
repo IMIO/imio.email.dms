@@ -7,6 +7,8 @@ Changelog
 
 - Handled "OSError: broken data stream when reading image file"
   [sgeulette]
+- Set lower smtp sent limit
+  [sgeulette]
 
 0.24 (2023-05-23)
 -----------------
