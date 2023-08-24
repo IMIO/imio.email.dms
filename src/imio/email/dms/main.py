@@ -73,7 +73,7 @@ Image.MAX_IMAGE_PIXELS = None
 # OSError: broken data stream when reading image file
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 EXIF_ORIENTATION = 0x0112
-MAX_SIZE_ATTACH = 20000000
+MAX_SIZE_ATTACH = 19000000
 
 ERROR_MAIL = u"""
 Problematic mail is attached.\n
