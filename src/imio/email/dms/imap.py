@@ -112,15 +112,15 @@ class IMAPEmailHandler(object):
                 logger.error("Unable to fetch flags for mail {0}".format(mail_id))
                 continue
             flags = imaplib.ParseFlags(flags_data[0])
+            if isinstance(mail_id, bytes):
+                mail_id = mail_id.decode()
+                flags = [fl.decode() for fl in flags]
             mail = self.get_mail(mail_id)
             if not mail:
                 continue
             parser = Parser(mail, dev_mode, mail_id)
             parsed_orig_mail = MailParser(mail)
             r_date = reception_date(mail)
-            if isinstance(mail_id, bytes):
-                mail_id = mail_id.decode()
-                flags = [fl.decode() for fl in flags]
             lst.append(u"{}, {}: '{}', '{}', '{}', '{}', {}".format(r_date, mail_id, parsed_orig_mail.headers['From'],
                        parsed_orig_mail.subject, parser.parsed_message.headers.get('From'), parser.headers['Subject'],
                        flags))
