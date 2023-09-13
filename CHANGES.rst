@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-0.26 (unreleased)
+0.26 (2023-09-13)
 -----------------
 
 - Lowercased email addresses in parser.
