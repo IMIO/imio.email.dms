@@ -5,8 +5,8 @@ Changelog
 0.26 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Lowercased email addresses in parser.
+  [sgeulette]
 
 0.25 (2023-08-24)
 -----------------
