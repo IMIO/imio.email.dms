@@ -23,5 +23,4 @@ lint:
 
 .PHONY: cleanall
 cleanall:  ## Cleans all installed buildout files
-	rm -fr bin include lib local share develop-eggs downloads eggs parts .installed.cfg
-
+	rm -fr bin include lib local share develop-eggs downloads eggs parts .installed.cfg .plone.versioncheck.tracked.json .mr.developer.cfg
