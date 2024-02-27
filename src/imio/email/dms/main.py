@@ -2,7 +2,7 @@
 
 """
 Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>] [--gen_pdf=<mail_id>]
-                          [--get_eml_orig] [--reset_flags=<mail_id>] [--test_eml=<path>] [--stats]
+                          [--get_eml_orig] [--reset_flags=<mail_id>] [--test_eml=<path>] [--stats] [--mail_id=<mail_id>]
 
 Arguments:
     FILE         config file
@@ -14,9 +14,10 @@ Options:
     --get_eml=<mail_id>     Get eml of original/contained email id.
     --get_eml_orig          Get eml of original email id (otherwise contained).
     --gen_pdf=<mail_id>     Generate pdf of contained email id.
-    --reset_flags=<mail_id> Reset all flags of email id
-    --test_eml=<path>       Test an eml handling
-    --stats                 Get email stats following stats
+    --reset_flags=<mail_id> Reset all flags of email id.
+    --test_eml=<path>       Test an eml handling.
+    --stats                 Get email stats following stats.
+    --mail_id=<mail_id>     Use this mail id.
 """
 
 from datetime import datetime
@@ -522,7 +523,7 @@ def process_mails():
     elif arguments.get("--gen_pdf"):
         mail_id = arguments['--gen_pdf']
         if not mail_id:
-            logger.error('Error: you must give an email id (--gen_pdf=25 by example)')
+            stop('Error: you must give an email id (--gen_pdf=25 by example)', logger)
         mail = handler.get_mail(mail_id)
         parsed = Parser(mail, dev_mode, mail_id)
         logger.info(parsed.headers)
@@ -583,7 +584,17 @@ def process_mails():
         sys.exit()
 
     imported = errors = unsupported = ignored = total = 0
-    for mail_info in handler.get_waiting_emails():
+    if arguments.get("--mail_id"):
+        mail_id = arguments['--mail_id']
+        if not mail_id:
+            stop('Error: you must give an email id (--mail_id=25 by example)', logger)
+        mail = handler.get_mail(mail_id)
+        if not mail:
+            stop('Error: no mail found for id {}'.format(mail_id), logger)
+        emails = [MailData(mail_id, mail)]
+    else:
+        emails = handler.get_waiting_emails()
+    for mail_info in emails:
         total += 1
         mail_id = mail_info.id
         mail = mail_info.mail

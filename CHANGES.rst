@@ -5,8 +5,8 @@ Changelog
 0.27 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Added new option `mail_id` to treat only a specific mail id (in any status).
+  [sgeulette]
 
 0.26 (2023-09-13)
 -----------------
