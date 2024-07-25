@@ -481,6 +481,7 @@ def process_mails():
         # import ipdb; ipdb.set_trace()
         # handler.mark_reset_error('58')
         # handler.mark_reset_ignored('77')
+        # handler.mark_mail_as_imported('594')
         # res, data = handler.connection.search(None, 'SUBJECT "FAIGNART MARION"')
         # for mail_id in data[0].split():
         #      omail = handler.get_mail(mail_id)

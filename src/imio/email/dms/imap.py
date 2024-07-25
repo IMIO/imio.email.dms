@@ -169,6 +169,7 @@ class IMAPEmailHandler(object):
     def mark_mail_as_imported(self, mail_id):
         """(Un)Mark 'imported' / 'waiting' flags on specified mail"""
         self.connection.store(mail_id, "-FLAGS", "waiting")
+        self.connection.store(mail_id, "-FLAGS", "error")
         self.connection.store(mail_id, "+FLAGS", "imported")
 
     def mark_mail_as_error(self, mail_id):
