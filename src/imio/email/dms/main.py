@@ -47,6 +47,7 @@ from PIL import ImageFile
 from PIL import ImageOps
 from PIL import UnidentifiedImageError
 from smtplib import SMTP
+from time import sleep
 from xml.etree.ElementTree import ParseError
 
 import configparser
@@ -152,6 +153,10 @@ class DmsMetadataError(Exception):
 
 class FileUploadError(Exception):
     """The response from the webservice file_upload route is not successful"""
+
+
+class OperationalError(Exception):
+    """The response from the webservice failed due to an OperationalError"""
 
 
 def get_mail_len_status(mail, additional):
@@ -377,6 +382,28 @@ def modify_attachments(mail_id, attachments):
     return new_lst
 
 
+def post_with_retries(url, auth, action, mail_id, json_data=None, files=None, retries=5, delay=30):
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, auth=auth, json=json_data, files=files)
+            # can simulate an empty response when webservice communication problems
+            # response._content = b""
+            if not response.content:
+                raise requests.exceptions.RequestException("Empty response")
+            response.raise_for_status()  # Raise an HTTPError for bad responses
+            req_content = json.loads(response.content)
+            # can be simulated by stopping postgresql
+            if "error" in req_content and "(OperationalError) " in req_content["error"]:
+                raise OperationalError(req_content["error"])
+            return req_content
+        except (OperationalError, requests.exceptions.RequestException) as e:
+            if attempt < retries - 1:
+                sleep(delay)
+                logger.info(f"{mail_id}: new attempt to {action}: '{e}'")
+            else:
+                raise e
+
+
 def send_to_ws(config, headers, main_file_path, attachments, mail_id):
     ws = config["webservice"]
     next_id, client_id = get_next_id(config, dev_infos)
@@ -431,32 +458,25 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
             ws=ws,
             client_id=client_id,
         )
-        metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
-        req_content = json.loads(metadata_req.content)
+        metadata_req_content = post_with_retries(metadata_url, auth, "post metadata", mail_id, json_data=metadata)
         # {'message': 'Well done', 'external_id': '05Z507000024176', 'id': 2557054, 'success': True}
-        if not req_content["success"] or "id" not in req_content:
-            msg = u"mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(
-                mail_id, req_content["error_code"], req_content["error"], metadata
+        if not metadata_req_content["success"] or "id" not in metadata_req_content:
+            msg = "mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(
+                mail_id, metadata_req_content["error_code"], metadata_req_content["error"], metadata
             ).encode("utf8")
             raise DmsMetadataError(msg)
-        response_id = req_content["id"]
+        response_id = metadata_req_content["id"]
 
         upload_url = "{proto}://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}".format(
             proto=proto, ws=ws, id=response_id
         )
         files = {"filedata": ("archive.tar", tar_content, "application/tar", {"Expires": "0"})}
-        ret_content = b""
-        i = 1
-        while ret_content == b"" and i <= 5:  # 5 attempts
-            upload_req = requests.post(upload_url, auth=auth, files=files)
-            ret_content = upload_req.content
-            if i > 1:
-                logger.info("{}: new attempt to upload file".format(mail_id))
-            i += 1
-        req_content = json.loads(ret_content)
-        if not req_content["success"]:
-            msg = u"mail_id: {}, code: '{}', error: '{}'".format(
-                mail_id, req_content["error_code"], req_content.get("error") or req_content["message"]
+        upload_req_content = post_with_retries(upload_url, auth, "upload file", mail_id, files=files, retries=5)
+        if not upload_req_content["success"]:
+            msg = "mail_id: {}, code: '{}', error: '{}'".format(
+                mail_id,
+                upload_req_content["error_code"],
+                upload_req_content.get("error") or upload_req_content["message"],
             ).encode("utf8")
             raise FileUploadError(msg)
 

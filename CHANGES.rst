@@ -5,7 +5,13 @@ Changelog
 0.27 (unreleased)
 -----------------
 
+- Added `post_with_reties` function, to handle operational errors and timeout from webservice. 5 tries each 30 seconds.
+  [sgeulette]
 - Added new option `mail_id` to treat only a specific mail id (in any status).
+  [sgeulette]
+- Improved mark_mail_as_imported
+  [sgeulette]
+- Upgraded mr.developer and reportlab, Blacked files, Code improvements, Corrected main branch name in gha
   [sgeulette]
 
 0.26 (2023-09-13)
