@@ -2,10 +2,10 @@ Changelog
 =========
 
 
-0.27 (unreleased)
+0.27 (2024-08-23)
 -----------------
 
-- Added `post_with_reties` function, to handle operational errors and timeout from webservice. 5 tries each 30 seconds.
+- Added `post_with_retries` function, to handle operational errors and timeout from webservice. 5 tries each 30 seconds.
   [sgeulette]
 - Added new option `mail_id` to treat only a specific mail id (in any status).
   [sgeulette]
