@@ -61,13 +61,14 @@ import sys
 import tarfile
 import zc.lockfile
 
+
 try:
     from pathlib import Path
 except ImportError:
     from pathlib2 import Path  # noqa
 
 
-dev_infos = {'nid': None}
+dev_infos = {"nid": None}
 img_size_limit = 1024
 # originally 89478485 => blocks at > 13300 pixels square
 Image.MAX_IMAGE_PIXELS = None
@@ -146,11 +147,11 @@ IMAP login : {1}\n
 
 
 class DmsMetadataError(Exception):
-    """ The response from the webservice dms_metadata route is not successful """
+    """The response from the webservice dms_metadata route is not successful"""
 
 
 class FileUploadError(Exception):
-    """ The response from the webservice file_upload route is not successful """
+    """The response from the webservice file_upload route is not successful"""
 
 
 def get_mail_len_status(mail, additional):
@@ -163,7 +164,7 @@ def get_mail_len_status(mail, additional):
     mail_string = mail.as_string()
     if len(mail_string) > MAX_SIZE_ATTACH:
         return mail_string, False, additional
-    return mail_string, True, u''
+    return mail_string, True, u""
 
 
 def notify_exception(config, mail_id, mail, error):
@@ -179,22 +180,23 @@ def notify_exception(config, mail_id, mail, error):
     msg["To"] = recipient
 
     error_msg = error
-    if hasattr(error, 'message'):
+    if hasattr(error, "message"):
         error_msg = safe_unicode(error.message)
-    elif hasattr(error, 'reason'):
+    elif hasattr(error, "reason"):
         try:
             error_msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
         except Exception:
             error_msg = error.reason
 
-    mail_string, len_ok, additional = get_mail_len_status(mail,
-                                                          u'The attachment is too big: so it cannot be sent by mail !')
+    mail_string, len_ok, additional = get_mail_len_status(
+        mail, u"The attachment is too big: so it cannot be sent by mail !"
+    )
     main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg, additional), "plain")
     msg.attach(main_text)
 
     if len_ok:
         attachment = MIMEBase("message", "rfc822")
-        attachment.set_payload(mail_string, 'utf8')
+        attachment.set_payload(mail_string, "utf8")
         attachment.add_header("Content-Disposition", "inline")
         msg.attach(attachment)
 
@@ -215,13 +217,14 @@ def notify_unsupported_origin(config, mail, headers):
     msg["To"] = from_
 
     mail_string, len_ok, additional = get_mail_len_status(
-        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
-    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional, headers['Subject']), "plain")
+        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
+    )
+    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional, headers["Subject"]), "plain")
     msg.attach(main_text)
 
     if len_ok:
         attachment = MIMEBase("message", "rfc822")
-        attachment.set_payload(mail_string, 'utf8')
+        attachment.set_payload(mail_string, "utf8")
         attachment.add_header("Content-Disposition", "inline")
         msg.attach(attachment)
 
@@ -244,14 +247,15 @@ def notify_ignored(config, mail_id, mail, from_):
     msg["Bcc"] = recipient
 
     mail_string, len_ok, additional = get_mail_len_status(
-        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
-#    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
+        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
+    )
+    #    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
     main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, additional), "plain")
     msg.attach(main_text)
 
     if len_ok:
         attachment = MIMEBase("message", "rfc822")
-        attachment.set_payload(mail_string, 'utf8')
+        attachment.set_payload(mail_string, "utf8")
         attachment.add_header("Content-Disposition", "inline")
         msg.attach(attachment)
 
@@ -307,18 +311,18 @@ def get_preview_pdf_path(config, mail_id):
 
 
 def modify_attachments(mail_id, attachments):
-    """Remove inline attachments and educe size attachments"""
+    """Remove inline attachments and reduce size attachments"""
     new_lst = []
     for dic in attachments:
         # we pass inline image, often used in signature. This image will be in generated pdf
-        if dic['type'].startswith('image/') and dic['disp'] == 'inline':
+        if dic["type"].startswith("image/") and dic["disp"] == "inline":
             if dev_mode:
-                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic['filename'], dic['len']))
+                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic["filename"], dic["len"]))
             continue
-        if dic['type'].startswith('image/'):
+        if dic["type"].startswith("image/"):
             orient_mod = size_mod = False
             try:
-                img = Image.open(BytesIO(dic['content']))
+                img = Image.open(BytesIO(dic["content"]))
             except UnidentifiedImageError as msg:
                 new_lst.append(dic)  # kept original image
                 continue
@@ -328,8 +332,9 @@ def modify_attachments(mail_id, attachments):
                 exif = img.getexif()
                 orient = exif.get(EXIF_ORIENTATION, 0)
             except ParseError:
-                logger.warning("{}: error getting exif info for image '{}', ignored orientation".format(
-                    mail_id, dic['filename']))
+                logger.warning(
+                    "{}: error getting exif info for image '{}', ignored orientation".format(mail_id, dic["filename"])
+                )
                 orient = 0
             new_img = img
             # if problem, si ImageMagik use https://github.com/IMIO/appy/blob/master/appy/pod/doc_importers.py#L545
@@ -338,14 +343,14 @@ def modify_attachments(mail_id, attachments):
                     new_img = ImageOps.exif_transpose(img)
                     orient_mod = True
                     if dev_mode:
-                        logger.info("{}: reoriented image '{}' from {}".format(mail_id, dic['filename'], orient))
+                        logger.info("{}: reoriented image '{}' from {}".format(mail_id, dic["filename"], orient))
                 except Exception as msg:
                     pass
-            if dic['len'] > 100000:
+            if dic["len"] > 100000:
                 is_reduced, new_size = get_reduced_size(new_img.size, img_size_limit)
                 if is_reduced:
                     if dev_mode:
-                        logger.info("{}: resized image '{}'".format(mail_id, dic['filename']))
+                        logger.info("{}: resized image '{}'".format(mail_id, dic["filename"]))
                     # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
                     new_img = new_img.resize(new_size, Image.BICUBIC)
                     size_mod = True
@@ -359,14 +364,15 @@ def modify_attachments(mail_id, attachments):
                     new_img.save(new_bytes, format=img.format, optimize=True)
                 new_content = new_bytes.getvalue()
                 new_len = len(new_content)
-                if orient_mod or (new_len < dic['len'] and float(new_len / dic['len']) < 0.9):
+                if orient_mod or (new_len < dic["len"] and float(new_len / dic["len"]) < 0.9):
                     #                                      more than 10% of difference
-                    dic['filename'] = re.sub(r'(\.[\w]+)$', r'-(redimensionné)\1', dic['filename'])
+                    dic["filename"] = re.sub(r"(\.[\w]+)$", r"-(redimensionné)\1", dic["filename"])
                     if dev_mode:
-                        logger.info("{}: new image '{}' ({} => {})".format(mail_id, dic['filename'], dic['len'],
-                                                                           new_len))
-                    dic['len'] = new_len
-                    dic['content'] = new_content
+                        logger.info(
+                            "{}: new image '{}' ({} => {})".format(mail_id, dic["filename"], dic["len"], new_len)
+                        )
+                    dic["len"] = new_len
+                    dic["content"] = new_content
         new_lst.append(dic)
     return new_lst
 
@@ -376,27 +382,28 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
     next_id, client_id = get_next_id(config, dev_infos)
     external_id = "{0}{1:08d}".format(client_id, next_id)
 
-    tar_path = Path('/tmp') / '{}.tar'.format(external_id)
+    tar_path = Path("/tmp") / "{}.tar".format(external_id)
     with tarfile.open(str(tar_path), "w") as tar:
         # 1) email pdf printout or eml file
-        mf_contents = Path(main_file_path).open('rb').read()
+        mf_contents = Path(main_file_path).open("rb").read()
         basename, ext = os.path.splitext(main_file_path)
-        mf_info = tarfile.TarInfo(name='email{}'.format(ext))
+        mf_info = tarfile.TarInfo(name="email{}".format(ext))
         mf_info.size = len(mf_contents)
         tar.addfile(tarinfo=mf_info, fileobj=BytesIO(mf_contents))
 
         # 2) metadata.json
         metadata_contents = json.dumps(headers).encode("utf8") if six.PY3 else json.dumps(headers)
-        metadata_info = tarfile.TarInfo(name='metadata.json')
+        metadata_info = tarfile.TarInfo(name="metadata.json")
         metadata_info.size = len(metadata_contents)
         tar.addfile(tarinfo=metadata_info, fileobj=BytesIO(metadata_contents))
 
         # 3) every attachment file
         files = []
         for attachment in attachments:
-            attachment_contents = attachment['content']
-            attachment_info = tarfile.TarInfo(name='/attachments/{}'.format(
-                get_unique_name(attachment['filename'], files)))
+            attachment_contents = attachment["content"]
+            attachment_info = tarfile.TarInfo(
+                name="/attachments/{}".format(get_unique_name(attachment["filename"], files))
+            )
             attachment_info.size = len(attachment_contents)
             tar.addfile(tarinfo=attachment_info, fileobj=BytesIO(attachment_contents))
     if dev_mode:
@@ -417,9 +424,9 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
             "filemd5": md5(tar_content).hexdigest(),
         }
 
-        auth = (ws['login'], ws['pass'])
-        proto = ws['port'] == '443' and 'https' or 'http'
-        metadata_url = '{proto}://{ws[host]}:{ws[port]}/dms_metadata/{client_id}/{ws[version]}'.format(
+        auth = (ws["login"], ws["pass"])
+        proto = ws["port"] == "443" and "https" or "http"
+        metadata_url = "{proto}://{ws[host]}:{ws[port]}/dms_metadata/{client_id}/{ws[version]}".format(
             proto=proto,
             ws=ws,
             client_id=client_id,
@@ -427,29 +434,30 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
         metadata_req = requests.post(metadata_url, auth=auth, json=metadata)
         req_content = json.loads(metadata_req.content)
         # {'message': 'Well done', 'external_id': '05Z507000024176', 'id': 2557054, 'success': True}
-        if not req_content['success'] or 'id' not in req_content:
-            msg = u"mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(mail_id, req_content['error_code'],
-                                                                                 req_content['error'],
-                                                                                 metadata).encode('utf8')
+        if not req_content["success"] or "id" not in req_content:
+            msg = u"mail_id: {}, code: '{}', error: '{}', metadata: '{}'".format(
+                mail_id, req_content["error_code"], req_content["error"], metadata
+            ).encode("utf8")
             raise DmsMetadataError(msg)
-        response_id = req_content['id']
+        response_id = req_content["id"]
 
-        upload_url = '{proto}://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}'.format(proto=proto, ws=ws,
-                                                                                             id=response_id)
-        files = {'filedata': ('archive.tar', tar_content, 'application/tar', {'Expires': '0'})}
-        ret_content = b''
+        upload_url = "{proto}://{ws[host]}:{ws[port]}/file_upload/{ws[version]}/{id}".format(
+            proto=proto, ws=ws, id=response_id
+        )
+        files = {"filedata": ("archive.tar", tar_content, "application/tar", {"Expires": "0"})}
+        ret_content = b""
         i = 1
-        while ret_content == b'' and i <= 5:  # 5 attempts
+        while ret_content == b"" and i <= 5:  # 5 attempts
             upload_req = requests.post(upload_url, auth=auth, files=files)
             ret_content = upload_req.content
             if i > 1:
                 logger.info("{}: new attempt to upload file".format(mail_id))
             i += 1
         req_content = json.loads(ret_content)
-        if not req_content['success']:
-            msg = u"mail_id: {}, code: '{}', error: '{}'".format(mail_id, req_content['error_code'],
-                                                                 req_content.get('error') or
-                                                                 req_content['message']).encode('utf8')
+        if not req_content["success"]:
+            msg = u"mail_id: {}, code: '{}', error: '{}'".format(
+                mail_id, req_content["error_code"], req_content.get("error") or req_content["message"]
+            ).encode("utf8")
             raise FileUploadError(msg)
 
         set_next_id(config, next_id)
@@ -464,7 +472,7 @@ def process_mails():
     host, port, ssl, login, password = get_mailbox_infos(config)
     counter_dir = Path(config["webservice"]["counter_dir"])
     counter_dir.mkdir(exist_ok=True)
-    lock_filepath = counter_dir / "lock_{0}".format(config['webservice']['client_id'])
+    lock_filepath = counter_dir / "lock_{0}".format(config["webservice"]["client_id"])
     lock = zc.lockfile.LockFile(lock_filepath.as_posix())
 
     handler = IMAPEmailHandler()
@@ -494,22 +502,22 @@ def process_mails():
         lock.close()
         sys.exit()
     elif arguments.get("--get_eml"):
-        mail_id = arguments['--get_eml']
+        mail_id = arguments["--get_eml"]
         if not mail_id:
-            stop('Error: you must give an email id (--get_eml=25 by example)', logger)
+            stop("Error: you must give an email id (--get_eml=25 by example)", logger)
         try:
             mail = handler.get_mail(mail_id)
             parsed = Parser(mail, dev_mode, mail_id)
             logger.info(parsed.headers)
             message = parsed.message
             # structure(message)
-            filename = '{}.eml'.format(mail_id)
+            filename = "{}.eml".format(mail_id)
             if login:
-                filename = '{}_{}'.format(login, filename)
-            if arguments.get('--get_eml_orig'):
+                filename = "{}_{}".format(login, filename)
+            if arguments.get("--get_eml_orig"):
                 message = parsed.initial_message
-                filename = filename.replace('.eml', '_o.eml')
-            logger.info('Writing {} file'.format(filename))
+                filename = filename.replace(".eml", "_o.eml")
+            logger.info("Writing {} file".format(filename))
             # o_attachments = parsed.attachments(False, set())
             # attachments = modify_attachments(mail_id, o_attachments)
             save_as_eml(filename, message)
@@ -522,22 +530,22 @@ def process_mails():
         lock.close()
         sys.exit()
     elif arguments.get("--gen_pdf"):
-        mail_id = arguments['--gen_pdf']
+        mail_id = arguments["--gen_pdf"]
         if not mail_id:
-            stop('Error: you must give an email id (--gen_pdf=25 by example)', logger)
+            stop("Error: you must give an email id (--gen_pdf=25 by example)", logger)
         mail = handler.get_mail(mail_id)
         parsed = Parser(mail, dev_mode, mail_id)
         logger.info(parsed.headers)
-        pdf_path = get_preview_pdf_path(config, mail_id.encode('utf8'))
-        logger.info('Generating {} file'.format(pdf_path))
+        pdf_path = get_preview_pdf_path(config, mail_id.encode("utf8"))
+        logger.info("Generating {} file".format(pdf_path))
         payload, cid_parts_used = parsed.generate_pdf(pdf_path)
         handler.disconnect()
         lock.close()
         sys.exit()
     elif arguments.get("--reset_flags"):
-        mail_id = arguments['--reset_flags']
+        mail_id = arguments["--reset_flags"]
         if not mail_id:
-            stop('Error: you must give an email id (--reset_flags=25 by example)', logger)
+            stop("Error: you must give an email id (--reset_flags=25 by example)", logger)
         # handler.mark_mail_as_error(mail_id)
         handler.mark_reset_all(mail_id)
         handler.disconnect()
@@ -545,17 +553,19 @@ def process_mails():
         sys.exit()
     elif arguments.get("--test_eml"):
         handler.disconnect()
-        eml_path = arguments['--test_eml']
+        eml_path = arguments["--test_eml"]
         if not eml_path or not os.path.exists(eml_path):
-            stop("Error: you must give an existing eml path '{}' (--test_eml=123.eml by example)".format(eml_path),
-                 logger)
+            stop(
+                "Error: you must give an existing eml path '{}' (--test_eml=123.eml by example)".format(eml_path),
+                logger,
+            )
         if not dev_mode:
-            stop('Error: You must activate dev mode to test an eml file', logger)
+            stop("Error: You must activate dev mode to test an eml file", logger)
         with open(eml_path) as fp:
             mail = email.message_from_file(fp, policy=email_policy)
         mail_id = os.path.splitext(os.path.basename(eml_path))[0]
-        mail.__setitem__("X-Forwarded-For", '0.0.0.0')  # to be considered as main mail
-        parser = Parser(mail, dev_mode, '')
+        mail.__setitem__("X-Forwarded-For", "0.0.0.0")  # to be considered as main mail
+        parser = Parser(mail, dev_mode, "")
         headers = parser.headers
         main_file_path = get_preview_pdf_path(config, mail_id)
         cid_parts_used = set()
@@ -563,7 +573,7 @@ def process_mails():
             payload, cid_parts_used = parser.generate_pdf(main_file_path)
             pdf_gen = True
         except Exception as pdf_exc:
-            main_file_path = main_file_path.replace('.pdf', '.eml')
+            main_file_path = main_file_path.replace(".pdf", ".eml")
             save_as_eml(main_file_path, parser.message)
             pdf_gen = False
         # structure(mail)
@@ -574,24 +584,24 @@ def process_mails():
         lock.close()
         sys.exit()
     elif arguments.get("--stats"):
-        logger.info('Started at {}'.format(datetime.now()))
+        logger.info("Started at {}".format(datetime.now()))
         stats = handler.stats()
-        logger.info("Total mails: {}".format(stats.pop('tot')))
-        for flag in sorted(stats['flags']):
-            logger.info("Flag '{}' => {}".format(flag, stats['flags'][flag]))
+        logger.info("Total mails: {}".format(stats.pop("tot")))
+        for flag in sorted(stats["flags"]):
+            logger.info("Flag '{}' => {}".format(flag, stats["flags"][flag]))
         handler.disconnect()
         lock.close()
-        logger.info('Ended at {}'.format(datetime.now()))
+        logger.info("Ended at {}".format(datetime.now()))
         sys.exit()
 
     imported = errors = unsupported = ignored = total = 0
     if arguments.get("--mail_id"):
-        mail_id = arguments['--mail_id']
+        mail_id = arguments["--mail_id"]
         if not mail_id:
-            stop('Error: you must give an email id (--mail_id=25 by example)', logger)
+            stop("Error: you must give an email id (--mail_id=25 by example)", logger)
         mail = handler.get_mail(mail_id)
         if not mail:
-            stop('Error: no mail found for id {}'.format(mail_id), logger)
+            stop("Error: no mail found for id {}".format(mail_id), logger)
         emails = [MailData(mail_id, mail)]
     else:
         emails = handler.get_waiting_emails()
@@ -603,7 +613,7 @@ def process_mails():
         try:
             parser = Parser(mail, dev_mode, mail_id)
             headers = parser.headers
-            if parser.origin == 'Generic inbox':
+            if parser.origin == "Generic inbox":
                 if not dev_mode:
                     handler.mark_mail_as_unsupported(mail_id)
                 unsupported += 1
@@ -613,14 +623,15 @@ def process_mails():
                     pass
                 continue
             # we check if the pushing agent has a permitted email format
-            if 'Agent' in headers and not check_transferer(headers['Agent'][0][1],
-                                                           config['mailinfos'].get('sender-pattern', '.+')):
+            if "Agent" in headers and not check_transferer(
+                headers["Agent"][0][1], config["mailinfos"].get("sender-pattern", ".+")
+            ):
                 if not dev_mode:
                     handler.mark_mail_as_ignored(mail_id)
                 # logger.error('Rejecting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
                 ignored += 1
                 try:
-                    notify_ignored(config, mail_id, mail, headers['Agent'][0][1])
+                    notify_ignored(config, mail_id, mail, headers["Agent"][0][1])
                 except Exception:  # better to continue than advise user
                     pass
                 continue
@@ -631,7 +642,7 @@ def process_mails():
                 pdf_gen = True
             except Exception as pdf_exc:
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
-                main_file_path = main_file_path.replace('.pdf', '.eml')
+                main_file_path = main_file_path.replace(".pdf", ".eml")
                 save_as_eml(main_file_path, parser.message)
                 pdf_gen = False
             o_attachments = parser.attachments(pdf_gen, cid_parts_used)
@@ -648,8 +659,11 @@ def process_mails():
             errors += 1
 
     if total:
-        logger.info("Treated {} emails: {} imported. {} unsupported. {} in error. {} ignored.".format(total,
-                    imported, unsupported, errors, ignored))
+        logger.info(
+            "Treated {} emails: {} imported. {} unsupported. {} in error. {} ignored.".format(
+                total, imported, unsupported, errors, ignored
+            )
+        )
     else:
         logger.info("Treated no email.")
     handler.disconnect()
@@ -680,7 +694,7 @@ def clean_mails():
     handler.connect(host, port, ssl, login, password)
     before_date = (datetime.now() - timedelta(days)).strftime("%d-%b-%Y")  # date string 01-Jan-2021
     # before_date = '01-Jun-2021'
-    res, data = handler.connection.search(None, '(BEFORE {0})'.format(before_date))
+    res, data = handler.connection.search(None, "(BEFORE {0})".format(before_date))
     if res != "OK":
         logger.error("Unable to fetch mails before '{}'".format(before_date))
         handler.disconnect()
@@ -692,7 +706,7 @@ def clean_mails():
     logger.info("Get '{}' emails older than '{}'".format(mail_ids_len, before_date))
     # sys.exit()
     for mail_id in mail_ids:
-        res, flags_data = handler.connection.fetch(mail_id, '(FLAGS)')
+        res, flags_data = handler.connection.fetch(mail_id, "(FLAGS)")
         if res != "OK":
             logger.error("Unable to fetch flags for mail {0}".format(mail_id))
             error += 1
@@ -706,8 +720,8 @@ def clean_mails():
             error += 1
             continue
         parser = Parser(mail, dev_mode, mail_id)
-        logger.info(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
-        out.append(u"{}: '{}'".format(mail_id, parser.headers['Subject']))
+        logger.info(u"{}: '{}'".format(mail_id, parser.headers["Subject"]))
+        out.append(u"{}: '{}'".format(mail_id, parser.headers["Subject"]))
         if doit:
             handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
         deleted += 1
@@ -719,8 +733,14 @@ def clean_mails():
                 out.append(u"ERROR: Unable to delete mails !!")
                 logger.error("Unable to delete mails")
     handler.disconnect()
-    out.append(u"{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
-               deleted, ignored, error))
-    logger.info("{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
-                deleted, ignored, error))
-    notify_result(config, 'Result of clean_mails', u'\n'.join(out))
+    out.append(
+        u"{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
+            deleted, ignored, error
+        )
+    )
+    logger.info(
+        "{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
+            deleted, ignored, error
+        )
+    )
+    notify_result(config, "Result of clean_mails", u"\n".join(out))

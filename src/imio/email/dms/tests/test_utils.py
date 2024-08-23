@@ -6,7 +6,6 @@ import unittest
 
 
 class TestUtils(unittest.TestCase):
-
     def test_get_reduced_size(self):
         self.assertTupleEqual((False, None), get_reduced_size((500, 500), 600))
         self.assertTupleEqual((True, (400, 400)), get_reduced_size((500, 500), 400))

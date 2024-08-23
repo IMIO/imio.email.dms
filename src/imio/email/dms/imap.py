@@ -53,7 +53,7 @@ class IMAPEmailHandler(object):
         return amount
 
     def get_mail(self, mail_id):
-        res, mail_data = self.connection.fetch(mail_id, '(RFC822)')
+        res, mail_data = self.connection.fetch(mail_id, "(RFC822)")
         if res != "OK":
             logger.error("Unable to fetch mail {0}".format(mail_id))
             return None
@@ -87,7 +87,7 @@ class IMAPEmailHandler(object):
         return waiting
 
     def should_handle(self, mail_id):
-        res, flags_data = self.connection.fetch(mail_id, '(FLAGS)')
+        res, flags_data = self.connection.fetch(mail_id, "(FLAGS)")
         if res != "OK":
             logger.error("Unable to fetch flags for mail {0}".format(mail_id))
             return False
@@ -100,14 +100,14 @@ class IMAPEmailHandler(object):
         """List last messages"""
         # args = [u"NOT KEYWORD imported", u"NOT KEYWORD unsupported", u"NOT KEYWORD error", u"NOT KEYWORD ignored"]
         # args = ['SUBJECT "PERMANNE"']
-        args = ['ALL']
+        args = ["ALL"]
         res, data = self.connection.search(None, *args)
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
         lst = []
         for mail_id in data[0].split()[-nb:]:
-            res, flags_data = self.connection.fetch(mail_id, '(FLAGS)')
+            res, flags_data = self.connection.fetch(mail_id, "(FLAGS)")
             if res != "OK":
                 logger.error("Unable to fetch flags for mail {0}".format(mail_id))
                 continue
@@ -121,32 +121,40 @@ class IMAPEmailHandler(object):
             parser = Parser(mail, dev_mode, mail_id)
             parsed_orig_mail = MailParser(mail)
             r_date = reception_date(mail)
-            lst.append(u"{}, {}: '{}', '{}', '{}', '{}', {}".format(r_date, mail_id, parsed_orig_mail.headers['From'],
-                       parsed_orig_mail.subject, parser.parsed_message.headers.get('From'), parser.headers['Subject'],
-                       flags))
-                       # parser.message.get('message-id'), flags))
+            lst.append(
+                u"{}, {}: '{}', '{}', '{}', '{}', {}".format(
+                    r_date,
+                    mail_id,
+                    parsed_orig_mail.headers["From"],
+                    parsed_orig_mail.subject,
+                    parser.parsed_message.headers.get("From"),
+                    parser.headers["Subject"],
+                    flags,
+                )
+            )
+            # parser.message.get('message-id'), flags))
             logger.info(lst[-1])
         return lst
 
     def stats(self):
         """List all flags"""
-        res, data = self.connection.search(None, 'ALL')
+        res, data = self.connection.search(None, "ALL")
         if res != "OK":
             logger.error("Unable to fetch mails")
             return []
         lst = []
-        stats = {'tot': 0, 'flags': {}}
+        stats = {"tot": 0, "flags": {}}
         for mail_id in data[0].split():
-            stats['tot'] += 1
-            res, flags_data = self.connection.fetch(mail_id, '(FLAGS)')
+            stats["tot"] += 1
+            res, flags_data = self.connection.fetch(mail_id, "(FLAGS)")
             if res != "OK":
                 logger.error("Unable to fetch flags for mail {0}".format(mail_id))
                 continue
             for flag in imaplib.ParseFlags(flags_data[0]):
                 flag = flag.decode()
-                if flag not in stats['flags']:
-                    stats['flags'][flag] = 0
-                stats['flags'][flag] += 1
+                if flag not in stats["flags"]:
+                    stats["flags"][flag] = 0
+                stats["flags"][flag] += 1
         return stats
 
     def mark_reset_error(self, mail_id):
