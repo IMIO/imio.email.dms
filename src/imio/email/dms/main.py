@@ -382,8 +382,8 @@ def modify_attachments(mail_id, attachments):
     return new_lst
 
 
-def post_with_retries(url, auth, action, mail_id, json_data=None, files=None, retries=5, delay=30):
-    for attempt in range(retries):
+def post_with_retries(url, auth, action, mail_id, json_data=None, files=None, retries=5, delay=20):
+    for attempt in range(1, retries + 1):
         try:
             response = requests.post(url, auth=auth, json=json_data, files=files)
             # can simulate an empty response when webservice communication problems
@@ -397,9 +397,9 @@ def post_with_retries(url, auth, action, mail_id, json_data=None, files=None, re
                 raise OperationalError(req_content["error"])
             return req_content
         except (OperationalError, requests.exceptions.RequestException) as e:
-            if attempt < retries - 1:
+            if attempt < retries:
                 sleep(delay)
-                logger.info(f"{mail_id}: new attempt to {action}: '{e}'")
+                logger.info(f"{mail_id}: failed attempt {attempt} to {action}: '{e}'")
             else:
                 raise e
 
