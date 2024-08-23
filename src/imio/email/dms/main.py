@@ -77,7 +77,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 EXIF_ORIENTATION = 0x0112
 MAX_SIZE_ATTACH = 19000000
 
-ERROR_MAIL = u"""
+ERROR_MAIL = """
 Problematic mail is attached.\n
 Client ID : {0}
 IMAP login : {1}\n
@@ -87,7 +87,7 @@ Corresponding exception : {3}
 {5}\n
 """
 
-UNSUPPORTED_ORIGIN_EMAIL = u"""
+UNSUPPORTED_ORIGIN_EMAIL_EN = """
 Dear user,
 
 The attached email has been refused because it wasn't sent to us as an attachment.\n
@@ -108,7 +108,7 @@ Please excuse us for the inconvenience.\n
 {0}\n
 """
 
-UNSUPPORTED_ORIGIN_EMAIL = u"""
+UNSUPPORTED_ORIGIN_EMAIL = """
 Cher utilisateur d'iA.Docs,
 
 Le transfert de l'email attaché ("{1}") a été rejeté car il n'a pas été transféré correctement.\n
@@ -127,7 +127,7 @@ Cordialement.\n
 {0}\n
 """
 
-IGNORED_MAIL = u"""
+IGNORED_MAIL = """
 Bonjour,
 Votre adresse email {3} n'est pas autorisée à transférer un email vers iA.docs.
 Si cette action est justifiée, veuillez prendre contact avec votre référent interne.\n
@@ -139,7 +139,7 @@ pattern : "caché"
 {4}\n
 """
 
-RESULT_MAIL = u"""
+RESULT_MAIL = """
 Client ID : {0}
 IMAP login : {1}\n
 {2}\n
@@ -164,7 +164,7 @@ def get_mail_len_status(mail, additional):
     mail_string = mail.as_string()
     if len(mail_string) > MAX_SIZE_ATTACH:
         return mail_string, False, additional
-    return mail_string, True, u""
+    return mail_string, True, ""
 
 
 def notify_exception(config, mail_id, mail, error):
@@ -184,12 +184,12 @@ def notify_exception(config, mail_id, mail, error):
         error_msg = safe_unicode(error.message)
     elif hasattr(error, "reason"):
         try:
-            error_msg = u"'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
+            error_msg = "'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
         except Exception:
             error_msg = error.reason
 
     mail_string, len_ok, additional = get_mail_len_status(
-        mail, u"The attachment is too big: so it cannot be sent by mail !"
+        mail, "The attachment is too big: so it cannot be sent by mail !"
     )
     main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg, additional), "plain")
     msg.attach(main_text)
@@ -217,7 +217,7 @@ def notify_unsupported_origin(config, mail, headers):
     msg["To"] = from_
 
     mail_string, len_ok, additional = get_mail_len_status(
-        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
+        mail, "La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
     )
     main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional, headers["Subject"]), "plain")
     msg.attach(main_text)
@@ -247,9 +247,9 @@ def notify_ignored(config, mail_id, mail, from_):
     msg["Bcc"] = recipient
 
     mail_string, len_ok, additional = get_mail_len_status(
-        mail, u"La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
+        mail, "La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
     )
-    #    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
+    # main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
     main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, additional), "plain")
     msg.attach(main_text)
 
@@ -323,10 +323,10 @@ def modify_attachments(mail_id, attachments):
             orient_mod = size_mod = False
             try:
                 img = Image.open(BytesIO(dic["content"]))
-            except UnidentifiedImageError as msg:
+            except UnidentifiedImageError:
                 new_lst.append(dic)  # kept original image
                 continue
-            except Image.DecompressionBombError as msg:  # never append because Image.MAX_IMAGE_PIXELS is set to None
+            except Image.DecompressionBombError:  # never append because Image.MAX_IMAGE_PIXELS is set to None
                 continue
             try:
                 exif = img.getexif()
@@ -344,7 +344,7 @@ def modify_attachments(mail_id, attachments):
                     orient_mod = True
                     if dev_mode:
                         logger.info("{}: reoriented image '{}' from {}".format(mail_id, dic["filename"], orient))
-                except Exception as msg:
+                except Exception:
                     pass
             if dic["len"] > 100000:
                 is_reduced, new_size = get_reduced_size(new_img.size, img_size_limit)
@@ -360,13 +360,13 @@ def modify_attachments(mail_id, attachments):
                 # save the image in new_bytes
                 try:
                     new_img.save(new_bytes, format=img.format, optimize=True, quality=75)
-                except ValueError as err:
+                except ValueError:
                     new_img.save(new_bytes, format=img.format, optimize=True)
                 new_content = new_bytes.getvalue()
                 new_len = len(new_content)
                 if orient_mod or (new_len < dic["len"] and float(new_len / dic["len"]) < 0.9):
                     #                                      more than 10% of difference
-                    dic["filename"] = re.sub(r"(\.[\w]+)$", r"-(redimensionné)\1", dic["filename"])
+                    dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
                     if dev_mode:
                         logger.info(
                             "{}: new image '{}' ({} => {})".format(mail_id, dic["filename"], dic["len"], new_len)
@@ -572,7 +572,7 @@ def process_mails():
         try:
             payload, cid_parts_used = parser.generate_pdf(main_file_path)
             pdf_gen = True
-        except Exception as pdf_exc:
+        except Exception:
             main_file_path = main_file_path.replace(".pdf", ".eml")
             save_as_eml(main_file_path, parser.message)
             pdf_gen = False
@@ -640,7 +640,7 @@ def process_mails():
             try:
                 payload, cid_parts_used = parser.generate_pdf(main_file_path)
                 pdf_gen = True
-            except Exception as pdf_exc:
+            except Exception:
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace(".pdf", ".eml")
                 save_as_eml(main_file_path, parser.message)
@@ -702,7 +702,7 @@ def clean_mails():
     deleted = ignored = error = 0
     mail_ids = data[0].split()
     mail_ids_len = len(mail_ids)
-    out = [u"Get '{}' emails older than '{}'".format(mail_ids_len, before_date)]
+    out = ["Get '{}' emails older than '{}'".format(mail_ids_len, before_date)]
     logger.info("Get '{}' emails older than '{}'".format(mail_ids_len, before_date))
     # sys.exit()
     for mail_id in mail_ids:
@@ -720,8 +720,8 @@ def clean_mails():
             error += 1
             continue
         parser = Parser(mail, dev_mode, mail_id)
-        logger.info(u"{}: '{}'".format(mail_id, parser.headers["Subject"]))
-        out.append(u"{}: '{}'".format(mail_id, parser.headers["Subject"]))
+        logger.info("{}: '{}'".format(mail_id, parser.headers["Subject"]))
+        out.append("{}: '{}'".format(mail_id, parser.headers["Subject"]))
         if doit:
             handler.connection.store(mail_id, "+FLAGS", "\\Deleted")
         deleted += 1
@@ -730,11 +730,11 @@ def clean_mails():
         if doit:
             res, data = handler.connection.expunge()
             if res != "OK":
-                out.append(u"ERROR: Unable to delete mails !!")
+                out.append("ERROR: Unable to delete mails !!")
                 logger.error("Unable to delete mails")
     handler.disconnect()
     out.append(
-        u"{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
+        "{} emails have been deleted. {} emails are ignored. {} emails have caused an error.".format(
             deleted, ignored, error
         )
     )
@@ -743,4 +743,4 @@ def clean_mails():
             deleted, ignored, error
         )
     )
-    notify_result(config, "Result of clean_mails", u"\n".join(out))
+    notify_result(config, "Result of clean_mails", "\n".join(out))
