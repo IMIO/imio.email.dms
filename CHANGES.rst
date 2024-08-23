@@ -5,8 +5,8 @@ Changelog
 0.28 (unreleased)
 -----------------
 
-- Nothing changed yet.
-
+- Improved failed attempt message.
+  [sgeulette]
 
 0.27 (2024-08-23)
 -----------------
