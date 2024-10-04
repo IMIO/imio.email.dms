@@ -7,6 +7,8 @@ Changelog
 
 - Improved failed attempt message.
   [sgeulette]
+- Corrected email parsing with empty body (avoiding AttributeError on is_attachment).
+  [sgeulette]
 
 0.27 (2024-08-23)
 -----------------

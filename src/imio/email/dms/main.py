@@ -588,6 +588,7 @@ def process_mails():
         parser = Parser(mail, dev_mode, "")
         headers = parser.headers
         main_file_path = get_preview_pdf_path(config, mail_id)
+        logger.info("pdf file {}".format(main_file_path))
         cid_parts_used = set()
         try:
             payload, cid_parts_used = parser.generate_pdf(main_file_path)
