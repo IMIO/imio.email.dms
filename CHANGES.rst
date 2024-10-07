@@ -2,8 +2,8 @@ Changelog
 =========
 
 
-0.28 (unreleased)
------------------
+0.28.0 (2024-10-07)
+-------------------
 
 - Improved failed attempt message.
   [sgeulette]
