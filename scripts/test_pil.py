@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# bin/runpy
 from imio.email.dms.utils import get_reduced_size
 from PIL import Image
 from PIL import ImageOps
@@ -8,7 +9,7 @@ import re
 import sys
 
 
-filename = '/home/sge/Documents/imio/docs/CLIENTS/Flémalle, CPAS/img_orig_20230123_133150.jpg'
+filename = "/home/sge/Documents/imio/docs/CLIENTS/Flémalle, CPAS/img_orig_20230123_133150.jpg"
 
 EXIF_ORIENTATION = 0x0112
 img_size_limit = 1024
@@ -16,9 +17,9 @@ modified = False
 # http://sylvana.net/jpegcrop/exif_orientation.html
 
 logging.basicConfig()
-logger = logging.getLogger('sqlcmd')
+logger = logging.getLogger("sqlcmd")
 logger.setLevel(logging.INFO)
-new_name = re.sub(r'\.(jpg|jpeg)', r'_transposed.\1', filename, flags=re.I)
+new_name = re.sub(r"\.(jpg|jpeg)", r"_transposed.\1", filename, flags=re.I)
 if filename == new_name:
     logger.error("New filename is the same '{}'".format(new_name))
     sys.exit(1)

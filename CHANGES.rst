@@ -9,6 +9,8 @@ Changelog
   [sgeulette]
 - Corrected email parsing with empty body (avoiding AttributeError on is_attachment).
   [sgeulette]
+- Added test script
+  [sgeulette]
 
 0.27 (2024-08-23)
 -----------------
