@@ -16,7 +16,7 @@ long_description = "\n\n".join(
 
 setup(
     name="imio.email.dms",
-    version="0.28.0",
+    version="0.28.1.dev0",
     description="Package to read emails and send them to DMS",
     long_description=long_description,
     # Get more from https://pypi.python.org/pypi?%3Aaction=list_classifiers
