@@ -15,6 +15,7 @@ except ImportError:
 
 
 def safe_unicode(value, encoding="utf-8"):
+    # En python 3 toutes les chaines de caractères sont des str unicode n'est pas nécessaire
     """Converts a value to unicode, even it is already a unicode string."""
     if isinstance(value, unicode):  # noqa
         return value
