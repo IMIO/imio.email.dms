@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from imio.email.dms import dev_mode
-from imio.email.dms import email_policy
 from imio.email.dms.utils import reception_date
+from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser  # noqa
 from mailparser import MailParser
 
