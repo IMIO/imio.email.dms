@@ -2,7 +2,7 @@
 
 """
 Usage: process_mails FILE [--requeue_errors] [--list_emails=<number>] [--get_eml=<mail_id>] [--gen_pdf=<mail_id>]
-                          [--get_eml_orig] [--reset_flags=<mail_id>] [--test_eml=<path>] [--stats] [--mail_id=<mail_id>]
+                          [--eml_orig] [--reset_flags=<mail_id>] [--test_eml=<path>] [--stats] [--mail_id=<mail_id>]
 
 Arguments:
     FILE         config file
@@ -12,7 +12,7 @@ Options:
     --requeue_errors        Put email in error status back in waiting for processing.
     --list_emails=<number>  List last xx emails.
     --get_eml=<mail_id>     Get eml of original/contained email id.
-    --get_eml_orig          Get eml of original email id (otherwise contained).
+    --eml_orig              With --get_eml or --test_eml, consider original mail not contained.
     --gen_pdf=<mail_id>     Generate pdf of contained email id.
     --reset_flags=<mail_id> Reset all flags of email id.
     --test_eml=<path>       Test an eml handling.
@@ -28,7 +28,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from imio.email.dms import dev_mode
-from imio.email.dms import email_policy
 from imio.email.dms import logger
 from imio.email.dms.imap import IMAPEmailHandler
 from imio.email.dms.imap import MailData
@@ -38,6 +37,7 @@ from imio.email.dms.utils import get_unique_name
 from imio.email.dms.utils import safe_unicode
 from imio.email.dms.utils import save_as_eml
 from imio.email.dms.utils import set_next_id
+from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser  # noqa
 from imio.email.parser.utils import stop  # noqa
 from imio.email.parser.utils import structure  # noqa
@@ -534,7 +534,7 @@ def process_mails():
             filename = "{}.eml".format(mail_id)
             if login:
                 filename = "{}_{}".format(login, filename)
-            if arguments.get("--get_eml_orig"):
+            if arguments.get("--eml_orig"):
                 message = parsed.initial_message
                 filename = filename.replace(".eml", "_o.eml")
             logger.info("Writing {} file".format(filename))
@@ -584,7 +584,8 @@ def process_mails():
         with open(eml_path) as fp:
             mail = email.message_from_file(fp, policy=email_policy)
         mail_id = os.path.splitext(os.path.basename(eml_path))[0]
-        mail.__setitem__("X-Forwarded-For", "0.0.0.0")  # to be considered as main mail
+        if not arguments.get("--eml_orig"):
+            mail.__setitem__("X-Forwarded-For", "0.0.0.0")  # to be considered as main mail
         parser = Parser(mail, dev_mode, "")
         headers = parser.headers
         main_file_path = get_preview_pdf_path(config, mail_id)
@@ -597,9 +598,9 @@ def process_mails():
             main_file_path = main_file_path.replace(".pdf", ".eml")
             save_as_eml(main_file_path, parser.message)
             pdf_gen = False
-        # structure(mail)
-        o_attachments = parser.attachments(pdf_gen, cid_parts_used)
-        # [{tup[0]: tup[1] for tup in at.items() if tup[0] != 'content'} for at in o_attachments]
+        # structure(parser.message)
+        o_attachments = parser.attachments()
+        # [k: v for k, v in at.items() if k != 'content'} for at in o_attachments]
         attachments = modify_attachments(mail_id, o_attachments)
         send_to_ws(config, headers, main_file_path, attachments, mail_id)
         lock.close()
