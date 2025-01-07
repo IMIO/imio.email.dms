@@ -588,20 +588,17 @@ def process_mails():
             mail.__setitem__("X-Forwarded-For", "0.0.0.0")  # to be considered as main mail
         parser = Parser(mail, dev_mode, "")
         headers = parser.headers
-        main_file_path = get_preview_pdf_path(config, mail_id)
-        logger.info("pdf file {}".format(main_file_path))
-        cid_parts_used = set()
-        try:
-            payload, cid_parts_used = parser.generate_pdf(main_file_path)
-            pdf_gen = True
-        except Exception:
-            main_file_path = main_file_path.replace(".pdf", ".eml")
-            save_as_eml(main_file_path, parser.message)
-            pdf_gen = False
-        # structure(parser.message)
         o_attachments = parser.attachments()
         # [k: v for k, v in at.items() if k != 'content'} for at in o_attachments]
         attachments = modify_attachments(mail_id, o_attachments)
+        parser._attachments = attachments
+        main_file_path = get_preview_pdf_path(config, mail_id)
+        logger.info("pdf file {}".format(main_file_path))
+        try:
+            parser.generate_pdf(main_file_path)
+        except Exception:
+            main_file_path = main_file_path.replace(".pdf", ".eml")
+            save_as_eml(main_file_path, parser.message)
         send_to_ws(config, headers, main_file_path, attachments, mail_id)
         lock.close()
         sys.exit()
@@ -658,17 +655,15 @@ def process_mails():
                     pass
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
-            cid_parts_used = set()
+            o_attachments = parser.attachments()
+            attachments = modify_attachments(mail_id, o_attachments)
+            parser._attachments = attachments
             try:
-                payload, cid_parts_used = parser.generate_pdf(main_file_path)
-                pdf_gen = True
+                parser.generate_pdf(main_file_path)
             except Exception:
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace(".pdf", ".eml")
                 save_as_eml(main_file_path, parser.message)
-                pdf_gen = False
-            o_attachments = parser.attachments(pdf_gen, cid_parts_used)
-            attachments = modify_attachments(mail_id, o_attachments)
             send_to_ws(config, headers, main_file_path, attachments, mail_id)
             if not dev_mode:
                 handler.mark_mail_as_imported(mail_id)
