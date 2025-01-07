@@ -14,14 +14,34 @@ except ImportError:
     from pathlib2 import Path  # noqa
 
 
-def safe_unicode(value, encoding="utf-8"):
-    """Converts a value to unicode, even it is already a unicode string."""
-    if isinstance(value, unicode):  # noqa
-        return value
-    elif isinstance(value, basestring):  # noqa
+def safe_text(value, encoding="utf-8") -> str:
+    """Converts a value to text, even it is already a text string.
+    Copied from plone.base.utils
+
+    >>> test_bytes = u'\u01b5'.encode('utf-8')
+    >>> safe_text('spam') == u'spam'
+    True
+    >>> safe_text(b'spam') == u'spam'
+    True
+    >>> safe_text(u'spam') == u'spam'
+    True
+    >>> safe_text(u'spam'.encode('utf-8')) == u'spam'
+    True
+    >>> safe_text(test_bytes) == u'\u01b5'
+    True
+    >>> safe_text(u'\xc6\xb5'.encode('iso-8859-1')) == u'\u01b5'
+    True
+    >>> safe_text(test_bytes, encoding='ascii') == u'\u01b5'
+    True
+    >>> safe_text(1) == 1
+    True
+    >>> print(safe_text(None))
+    None
+    """
+    if isinstance(value, bytes):
         try:
-            value = unicode(value, encoding)  # noqa
-        except:
+            value = str(value, encoding)
+        except UnicodeDecodeError:
             value = value.decode("utf-8", "replace")
     return value
 

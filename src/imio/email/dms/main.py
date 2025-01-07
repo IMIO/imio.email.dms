@@ -34,7 +34,7 @@ from imio.email.dms.imap import MailData
 from imio.email.dms.utils import get_next_id
 from imio.email.dms.utils import get_reduced_size
 from imio.email.dms.utils import get_unique_name
-from imio.email.dms.utils import safe_unicode
+from imio.email.dms.utils import safe_text
 from imio.email.dms.utils import save_as_eml
 from imio.email.dms.utils import set_next_id
 from imio.email.parser import email_policy  # noqa
@@ -186,7 +186,7 @@ def notify_exception(config, mail_id, mail, error):
 
     error_msg = error
     if hasattr(error, "message"):
-        error_msg = safe_unicode(error.message)
+        error_msg = safe_text(error.message)
     elif hasattr(error, "reason"):
         try:
             error_msg = "'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
@@ -543,7 +543,7 @@ def process_mails():
             save_as_eml(filename, message)
         except Exception as e:
             logger.error(e, exc_info=True)
-            # notify_exception(config, mail_id, mail, e)
+            notify_exception(config, mail_id, mail, e)
             if not dev_mode:
                 handler.mark_mail_as_error(mail_id)
         handler.disconnect()

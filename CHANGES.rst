@@ -5,8 +5,10 @@ Changelog
 0.28.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Replaced `utils.safe_unicode` by `utils.safe_text`.
+  [sgeulette]
+- imio.email.parser improvements.
+  [sgeulette]
 
 0.28.0 (2024-10-07)
 -------------------
