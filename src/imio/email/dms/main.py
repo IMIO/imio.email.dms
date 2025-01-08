@@ -61,6 +61,8 @@ import six
 import sys
 import tarfile
 import zc.lockfile
+import subprocess
+import tempfile
 
 
 try:
@@ -315,6 +317,46 @@ def get_preview_pdf_path(config, mail_id):
     return os.path.join(output_dir, filename)
 
 
+def compress_pdf(original_pdf_content):
+    with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.pdf') as input_temp_file:
+        input_temp_file.write(original_pdf_content)
+        input_temp_file_name = input_temp_file.name
+
+    try:
+        # Create a temporary file for output
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as output_temp_file:
+            output_temp_file_name = output_temp_file.name
+
+        # Ghostscript command
+        gs_command = [
+            "gs",
+            "-sDEVICE=pdfwrite",
+            "-dCompatibilityLevel=1.4",
+            "-dPDFSETTINGS=/ebook",  # Medium resolution (good for reading).
+            "-dNOPAUSE",
+            "-dQUIET",
+            "-dBATCH",
+            f"-sOutputFile={output_temp_file_name}",
+            input_temp_file_name,
+        ]
+
+        result = subprocess.run(gs_command, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            raise RuntimeError(f"Ghostscript failed: {result.stderr}")
+
+        with open(output_temp_file_name, "rb") as f:
+            compressed_pdf_content = f.read()
+
+    finally:
+        # Clean temporary files
+        os.unlink(input_temp_file_name)
+        if os.path.exists(output_temp_file_name):
+            os.unlink(output_temp_file_name)
+
+    return compressed_pdf_content
+
+
 def modify_attachments(mail_id, attachments):
     """Remove inline attachments and reduce size attachments"""
     new_lst = []
@@ -378,6 +420,11 @@ def modify_attachments(mail_id, attachments):
                         )
                     dic["len"] = new_len
                     dic["content"] = new_content
+        if dic["type"] == "application/pdf":
+            compressed_pdf_content = compress_pdf(dic["content"])
+            dic["content"] = compressed_pdf_content
+            dic["len"] = len(compressed_pdf_content)
+            dic["filename"] = dic["filename"].replace(".pdf", "-compressed.pdf")
         new_lst.append(dic)
     return new_lst
 
