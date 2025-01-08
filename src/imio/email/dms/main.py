@@ -88,6 +88,16 @@ Corresponding exception : {3}
 {5}\n
 """
 
+ERROR_MAIL_AGENT = """
+Cher utilisateur d'iA.Docs,
+
+Vous avez tenté d'envoyer un email avec iA.Docs. Cependant, une erreur est survenue lors de la manipulation de cet email ({1}).\n
+Nous avons été averti de l'erreur et faisons au plus vite pour rétablir la situation.\n
+Ne réessayez pas d'envoyer ce mail.\n
+Veuillez nous excuser pour la gêne occasionnée.\n
+{0}\n
+"""
+
 UNSUPPORTED_ORIGIN_EMAIL_EN = """
 Dear user,
 
@@ -197,6 +207,33 @@ def notify_exception(config, mail_id, mail, error):
         mail, "The attachment is too big: so it cannot be sent by mail !"
     )
     main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg, additional), "plain")
+    msg.attach(main_text)
+
+    if len_ok:
+        attachment = MIMEBase("message", "rfc822")
+        attachment.set_payload(mail_string, "utf8")
+        attachment.add_header("Content-Disposition", "inline")
+        msg.attach(attachment)
+
+    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
+    smtp.send_message(msg)
+    smtp.quit()
+
+
+def notify_exception_agent(config, mail, headers):
+    smtp_infos = config["smtp"]
+    sender = smtp_infos["sender"]
+    recipient = headers["From"][0][1]
+
+    msg = MIMEMultipart()
+    msg["Subject"] = "Votre plateforme iA.Docs a rencontré un problème"
+    msg["From"] = sender
+    msg["To"] = recipient
+    mail_string, len_ok, additional = get_mail_len_status(
+        mail, "La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
+    )
+
+    main_text = MIMEText(ERROR_MAIL_AGENT.format(additional, headers["Subject"]), "plain")
     msg.attach(main_text)
 
     if len_ok:
@@ -544,6 +581,7 @@ def process_mails():
         except Exception as e:
             logger.error(e, exc_info=True)
             notify_exception(config, mail_id, mail, e)
+            notify_exception_agent(config, mail, parsed.headers)
             if not dev_mode:
                 handler.mark_mail_as_error(mail_id)
         handler.disconnect()
@@ -676,6 +714,7 @@ def process_mails():
         except Exception as e:
             logger.error(e, exc_info=True)
             notify_exception(config, mail_id, mail, e)
+            notify_exception_agent(config, mail, headers)
             if not dev_mode:
                 handler.mark_mail_as_error(mail_id)
             errors += 1
