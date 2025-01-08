@@ -78,84 +78,6 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 EXIF_ORIENTATION = 0x0112
 MAX_SIZE_ATTACH = 19000000
 
-ERROR_MAIL = """
-Problematic mail is attached.\n
-Client ID : {0}
-IMAP login : {1}\n
-mail id : {2}\n
-Corresponding exception : {3}
-{4}\n
-{5}\n
-"""
-
-ERROR_MAIL_AGENT = """
-Cher utilisateur d'iA.Docs,
-
-Vous avez tenté d'envoyer un email avec iA.Docs. Cependant, une erreur est survenue lors de la manipulation de cet email ({1}).\n
-Nous avons été averti de l'erreur et faisons au plus vite pour rétablir la situation.\n
-Ne réessayez pas d'envoyer ce mail.\n
-Veuillez nous excuser pour la gêne occasionnée.\n
-{0}\n
-"""
-
-UNSUPPORTED_ORIGIN_EMAIL_EN = """
-Dear user,
-
-The attached email has been refused because it wasn't sent to us as an attachment.\n
-\n
-Please try again, by following one of these methods.\n
-\n
-If you are using Microsoft Outlook:\n
-- In the ribbon, click on the More dropdown button next to the standard Forward button\n
-- Choose Forward as Attachment\n
-- Send the opened draft to the GED import address.\n
-\n
-If you are using Mozilla Thunderbird:\n
-- Open the email you want to import into the GED.\n
-- Click on the menu Message > Forward As > Attachment.\n
-- Send the opened draft to the GED import address.\n
-\n
-Please excuse us for the inconvenience.\n
-{0}\n
-"""
-
-UNSUPPORTED_ORIGIN_EMAIL = """
-Cher utilisateur d'iA.Docs,
-
-Le transfert de l'email attaché ("{1}") a été rejeté car il n'a pas été transféré correctement.\n
-Veuillez refaire le transfert du mail original en transférant "en tant que pièce jointe".\n
-Si vous utilisez Microsoft Outlook:\n
-- Dans le ruban, cliquez sur la flèche du ménu déroulant située sur le bouton de transfert\n
-- Choisissez le transfert en tant que pièce jointe\n
-- Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
-\n
-Si vous utilisez Mozilla Thunderbird:\n
-- Faites un clic droit sur l'email pour ouvrir le menu contextuel\n
-- Sélectionnez "Transférer au format" > "Pièce jointe".\n
-- Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
-\n
-Cordialement.\n
-{0}\n
-"""
-
-IGNORED_MAIL = """
-Bonjour,
-Votre adresse email {3} n'est pas autorisée à transférer un email vers iA.docs.
-Si cette action est justifiée, veuillez prendre contact avec votre référent interne.\n
-Le mail concerné est en pièce jointe.\n
-Client ID : {0}
-IMAP login : {1}
-mail id : {2}
-pattern : "caché"
-{4}\n
-"""
-
-RESULT_MAIL = """
-Client ID : {0}
-IMAP login : {1}\n
-{2}\n
-"""
-
 
 class DmsMetadataError(Exception):
     """The response from the webservice dms_metadata route is not successful"""
@@ -169,161 +91,186 @@ class OperationalError(Exception):
     """The response from the webservice failed due to an OperationalError"""
 
 
-def get_mail_len_status(mail, additional):
-    """Returns some info following mail length regarding max length.
-
-    :param mail: mail object
-    :param additional: unicode message to return if mail is bigger than max size
-    :return: mail as string, bool indicating if len is smaller, message for the user
+class Notify:
+    ERROR_MAIL_SUPPORT = """
+Problematic mail is attached.\n
+Client ID : {0}
+IMAP login : {1}\n
+mail id : {2}\n
+Corresponding exception : {3}
+{4}\n
+{additional}\n
     """
-    mail_string = mail.as_string()
-    if len(mail_string) > MAX_SIZE_ATTACH:
-        return mail_string, False, additional
-    return mail_string, True, ""
 
+    ERROR_MAIL_AGENT = """
+Cher utilisateur d'iA.Docs,
 
-def notify_exception(config, mail_id, mail, error):
-    client_id = config["webservice"]["client_id"]
-    login = config["mailbox"]["login"]
-    smtp_infos = config["smtp"]
-    sender = smtp_infos["sender"]
-    recipient = smtp_infos["recipient"]
+Vous avez tenté d'envoyer un email avec iA.Docs. Cependant, une erreur est survenue lors de la manipulation de cet email ("{0}").\n
+Nous avons été averti de l'erreur et faisons au plus vite pour rétablir la situation.\n
+Ne réessayez pas d'envoyer ce mail.\n
+Veuillez nous excuser pour la gêne occasionnée.\n
+{additional}\n
+    """
 
-    msg = MIMEMultipart()
-    msg["Subject"] = "Error handling an email for client {}".format(client_id)
-    msg["From"] = sender
-    msg["To"] = recipient
+    UNSUPPORTED_ORIGIN_EMAIL = """
+Cher utilisateur d'iA.Docs,
 
-    error_msg = error
-    if hasattr(error, "message"):
-        error_msg = safe_text(error.message)
-    elif hasattr(error, "reason"):
-        try:
-            error_msg = "'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
-        except Exception:
-            error_msg = error.reason
+Le transfert de l'email attaché ("{0}") a été rejeté car il n'a pas été transféré correctement.\n
+Veuillez refaire le transfert du mail original en transférant "en tant que pièce jointe".\n
+Si vous utilisez Microsoft Outlook:\n
+- Dans le ruban, cliquez sur la flèche du ménu déroulant située sur le bouton de transfert\n
+- Choisissez le transfert en tant que pièce jointe\n
+- Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
+\n
+Si vous utilisez Mozilla Thunderbird:\n
+- Faites un clic droit sur l'email pour ouvrir le menu contextuel\n
+- Sélectionnez "Transférer au format" > "Pièce jointe".\n
+- Envoyez le mail sans rien compléter d'autre à l'adresse prévue pour iA.Docs.\n
+\n
+Cordialement.\n
+{additional}\n
+    """
 
-    mail_string, len_ok, additional = get_mail_len_status(
-        mail, "The attachment is too big: so it cannot be sent by mail !"
-    )
-    main_text = MIMEText(ERROR_MAIL.format(client_id, login, mail_id, error.__class__, error_msg, additional), "plain")
-    msg.attach(main_text)
+    IGNORED_MAIL = """
+Bonjour,
+Votre adresse email {3} n'est pas autorisée à transférer un email vers iA.docs.
+Si cette action est justifiée, veuillez prendre contact avec votre référent interne.\n
+Le mail concerné est en pièce jointe.\n
+Client ID : {0}
+IMAP login : {1}
+mail id : {2}
+pattern : "caché"
+{additional}\n
+    """
 
-    if len_ok:
-        attachment = MIMEBase("message", "rfc822")
-        attachment.set_payload(mail_string, "utf8")
-        attachment.add_header("Content-Disposition", "inline")
-        msg.attach(attachment)
+    RESULT_MAIL = """
+Client ID : {0}
+IMAP login : {1}\n
+{2}\n
+    """
 
-    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    smtp.send_message(msg)
-    smtp.quit()
+    def __init__(self, mail, config, headers):
+        self.mail = mail
+        self.config = config
+        self.smtp_infos = self.config["smtp"]
+        self.headers = headers
 
+    def _set_message(self, msg, unformatted_message, format_args):
+        def get_mail_len_status(additional):
+            """Returns some info following mail length regarding max length.
 
-def notify_exception_agent(config, mail, headers):
-    smtp_infos = config["smtp"]
-    sender = smtp_infos["sender"]
-    recipient = headers["From"][0][1]
+            :param mail: mail object
+            :param additional: unicode message to return if mail is bigger than max size
+            :return: mail as string, bool indicating if len is smaller, message for the user
+            """
+            mail_string = self.mail.as_string()
+            if len(mail_string) > MAX_SIZE_ATTACH:
+                return mail_string, False, additional
+            return mail_string, True, ""
 
-    msg = MIMEMultipart()
-    msg["Subject"] = "Votre plateforme iA.Docs a rencontré un problème"
-    msg["From"] = sender
-    msg["To"] = recipient
-    mail_string, len_ok, additional = get_mail_len_status(
-        mail, "La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
-    )
+        mail_string, len_ok, additional = get_mail_len_status("La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
+        main_text = MIMEText(unformatted_message.format(*format_args, additional=additional), "plain")
+        msg.attach(main_text)
 
-    main_text = MIMEText(ERROR_MAIL_AGENT.format(additional, headers["Subject"]), "plain")
-    msg.attach(main_text)
+        if len_ok:
+            attachment = MIMEBase("message", "rfc822")
+            attachment.set_payload(mail_string, "utf8")
+            attachment.add_header("Content-Disposition", "inline")
+            msg.attach(attachment)
 
-    if len_ok:
-        attachment = MIMEBase("message", "rfc822")
-        attachment.set_payload(mail_string, "utf8")
-        attachment.add_header("Content-Disposition", "inline")
-        msg.attach(attachment)
+        return msg
 
-    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    smtp.send_message(msg)
-    smtp.quit()
+    def _send(self, msg):
+        host = str(self.smtp_infos["host"])
+        port = int(self.smtp_infos["port"])
+        smtp = SMTP(host, port)
+        smtp.send_message(msg)
+        smtp.quit()
 
+    def exception(self, mail_id, error):
+        def to_support(mail_id, error):
+            client_id = self.config["webservice"]["client_id"]
+            login = self.config["mailbox"]["login"]
+            sender = self.smtp_infos["sender"]
+            recipient = self.smtp_infos["recipient"]
 
-def notify_unsupported_origin(config, mail, headers):
-    smtp_infos = config["smtp"]
-    sender = smtp_infos["sender"]
-    from_ = headers["From"][0][1]
+            msg = MIMEMultipart()
+            msg["Subject"] = "Error handling an email for client {}".format(client_id)
+            msg["From"] = sender
+            msg["To"] = recipient
 
-    msg = MIMEMultipart()
-    msg["Subject"] = "Error importing email into iA.docs"
-    msg["Subject"] = "Erreur de transfert de votre email dans iA.Docs"
-    msg["From"] = sender
-    msg["To"] = from_
+            error_msg = error
+            if hasattr(error, "message"):
+                error_msg = safe_text(error.message)
+            elif hasattr(error, "reason"):
+                try:
+                    error_msg = "'{}', {}, {}, {}".format(error.reason, error.start, error.end, error.object)
+                except Exception:
+                    error_msg = error.reason
 
-    mail_string, len_ok, additional = get_mail_len_status(
-        mail, "La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
-    )
-    main_text = MIMEText(UNSUPPORTED_ORIGIN_EMAIL.format(additional, headers["Subject"]), "plain")
-    msg.attach(main_text)
+            msg = self._set_message(msg, self.ERROR_MAIL_SUPPORT, format_args=(client_id, login, mail_id, error.__class__, error_msg))
+            self._send(msg)
 
-    if len_ok:
-        attachment = MIMEBase("message", "rfc822")
-        attachment.set_payload(mail_string, "utf8")
-        attachment.add_header("Content-Disposition", "inline")
-        msg.attach(attachment)
+        def to_agent():
+            sender = self.smtp_infos["sender"]
+            recipient = self.headers["From"][0][1]
 
-    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    smtp.send_message(msg)
-    smtp.quit()
+            msg = MIMEMultipart()
+            msg["Subject"] = "Votre plateforme iA.Docs a rencontré un problème"
+            msg["From"] = sender
+            msg["To"] = recipient
+            msg = self._set_message(msg, self.ERROR_MAIL_AGENT, format_args=(self.headers["Subject"],))
 
+            self._send(msg)
 
-def notify_ignored(config, mail_id, mail, from_):
-    client_id = config["webservice"]["client_id"]
-    login = config["mailbox"]["login"]
-    smtp_infos = config["smtp"]
-    sender = smtp_infos["sender"]
-    recipient = smtp_infos["recipient"]
+        to_support(mail_id, error)
+        to_agent()
 
-    msg = MIMEMultipart()
-    msg["Subject"] = "Transfert non autorisé de {} pour le client {}".format(from_, client_id)
-    msg["From"] = sender
-    msg["To"] = from_
-    msg["Bcc"] = recipient
+    def unsupported_origin(self):
+        sender = self.smtp_infos["sender"]
+        from_ = self.headers["From"][0][1]
 
-    mail_string, len_ok, additional = get_mail_len_status(
-        mail, "La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
-    )
-    # main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, config['mailinfos']['sender-pattern']),
-    main_text = MIMEText(IGNORED_MAIL.format(client_id, login, mail_id, from_, additional), "plain")
-    msg.attach(main_text)
+        msg = MIMEMultipart()
+        msg["Subject"] = "Erreur de transfert de votre email dans iA.Docs"
+        msg["From"] = sender
+        msg["To"] = from_
+        msg = self._set_message(msg, self.UNSUPPORTED_ORIGIN_EMAIL, format_args=(self.headers["Subject"],))
 
-    if len_ok:
-        attachment = MIMEBase("message", "rfc822")
-        attachment.set_payload(mail_string, "utf8")
-        attachment.add_header("Content-Disposition", "inline")
-        msg.attach(attachment)
+        self._send(msg)
 
-    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    smtp.send_message(msg)
-    smtp.quit()
+    def ignored(self):
+        client_id = self.config["webservice"]["client_id"]
+        login = self.config["mailbox"]["login"]
+        smtp_infos = self.config["smtp"]
+        sender = smtp_infos["sender"]
+        recipient = smtp_infos["recipient"]
+        from_ = self.headers["Agent"][0][1]
+        mail_id = self.headers["Agent"][0][1]
 
+        msg = MIMEMultipart()
+        msg["Subject"] = "Transfert non autorisé de {} pour le client {}".format(from_, client_id)
+        msg["From"] = sender
+        msg["To"] = from_
+        msg["Bcc"] = recipient
+        msg = self._set_message(msg, self.IGNORED_MAIL, format_args=(client_id, login, mail_id, from_))
 
-def notify_result(config, subject, message):
-    client_id = config["webservice"]["client_id"]
-    login = config["mailbox"]["login"]
-    smtp_infos = config["smtp"]
-    sender = smtp_infos["sender"]
-    recipient = smtp_infos["recipient"]
+        self._send(msg)
 
-    msg = MIMEMultipart()
-    msg["Subject"] = "{} for client {}".format(subject, client_id)
-    msg["From"] = sender
-    msg["To"] = recipient
+    def result(self, subject, message):
+        client_id = self.config["webservice"]["client_id"]
+        login = self.config["mailbox"]["login"]
+        smtp_infos = self.config["smtp"]
+        sender = smtp_infos["sender"]
+        recipient = smtp_infos["recipient"]
 
-    main_text = MIMEText(RESULT_MAIL.format(client_id, login, message), "plain")
-    msg.attach(main_text)
+        msg = MIMEMultipart()
+        msg["Subject"] = "{} for client {}".format(subject, client_id)
+        msg["From"] = sender
+        msg["To"] = recipient
+        main_text = MIMEText(self.RESULT_MAIL.format(client_id, login, message), "plain")
+        msg.attach(main_text)
 
-    smtp = SMTP(str(smtp_infos["host"]), int(smtp_infos["port"]))
-    smtp.send_message(msg)
-    smtp.quit()
+        self._send(msg)
 
 
 def check_transferer(sender, pattern):
@@ -580,8 +527,7 @@ def process_mails():
             save_as_eml(filename, message)
         except Exception as e:
             logger.error(e, exc_info=True)
-            notify_exception(config, mail_id, mail, e)
-            notify_exception_agent(config, mail, parsed.headers)
+            Notify(mail, config, parsed.headers).exception(mail_id, e)
             if not dev_mode:
                 handler.mark_mail_as_error(mail_id)
         handler.disconnect()
@@ -678,7 +624,7 @@ def process_mails():
                     handler.mark_mail_as_unsupported(mail_id)
                 unsupported += 1
                 try:
-                    notify_unsupported_origin(config, mail, headers)
+                    Notify(mail, config, headers).unsupported_origin()
                 except Exception:  # better to continue than advise user
                     pass
                 continue
@@ -691,7 +637,7 @@ def process_mails():
                 # logger.error('Rejecting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
                 ignored += 1
                 try:
-                    notify_ignored(config, mail_id, mail, headers["Agent"][0][1])
+                    Notify(mail, config, headers).ignored()
                 except Exception:  # better to continue than advise user
                     pass
                 continue
@@ -713,8 +659,7 @@ def process_mails():
             imported += 1
         except Exception as e:
             logger.error(e, exc_info=True)
-            notify_exception(config, mail_id, mail, e)
-            notify_exception_agent(config, mail, headers)
+            Notify(mail, config, parsed.headers).exception(mail_id, e)
             if not dev_mode:
                 handler.mark_mail_as_error(mail_id)
             errors += 1
@@ -804,4 +749,4 @@ def clean_mails():
             deleted, ignored, error
         )
     )
-    notify_result(config, "Result of clean_mails", "\n".join(out))
+    Notify(None, config, None).result("Result of clean_mails", "\n".join(out))
