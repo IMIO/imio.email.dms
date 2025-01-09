@@ -542,7 +542,7 @@ def process_mails():
         logger.info(parsed.headers)
         pdf_path = get_preview_pdf_path(config, mail_id.encode("utf8"))
         logger.info("Generating {} file".format(pdf_path))
-        payload, cid_parts_used = parsed.generate_pdf(pdf_path)
+        parsed.generate_pdf(pdf_path)
         handler.disconnect()
         lock.close()
         sys.exit()
@@ -551,6 +551,7 @@ def process_mails():
         if not mail_id:
             stop("Error: you must give an email id (--reset_flags=25 by example)", logger)
         # handler.mark_mail_as_error(mail_id)
+        # handler.mark_mail_as_imported(mail_id)
         handler.mark_reset_all(mail_id)
         handler.disconnect()
         lock.close()
@@ -574,14 +575,11 @@ def process_mails():
         headers = parser.headers
         main_file_path = get_preview_pdf_path(config, mail_id)
         logger.info("pdf file {}".format(main_file_path))
-        cid_parts_used = set()
         try:
-            payload, cid_parts_used = parser.generate_pdf(main_file_path)
-            pdf_gen = True
+            parser.generate_pdf(main_file_path)
         except Exception:
             main_file_path = main_file_path.replace(".pdf", ".eml")
             save_as_eml(main_file_path, parser.message)
-            pdf_gen = False
         # structure(parser.message)
         o_attachments = parser.attachments()
         # [k: v for k, v in at.items() if k != 'content'} for at in o_attachments]
@@ -642,16 +640,13 @@ def process_mails():
                     pass
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
-            cid_parts_used = set()
             try:
-                payload, cid_parts_used = parser.generate_pdf(main_file_path)
-                pdf_gen = True
+                parser.generate_pdf(main_file_path)
             except Exception:
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace(".pdf", ".eml")
                 save_as_eml(main_file_path, parser.message)
-                pdf_gen = False
-            o_attachments = parser.attachments(pdf_gen, cid_parts_used)
+            o_attachments = parser.attachments()
             attachments = modify_attachments(mail_id, o_attachments)
             send_to_ws(config, headers, main_file_path, attachments, mail_id)
             if not dev_mode:
