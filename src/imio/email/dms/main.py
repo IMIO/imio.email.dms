@@ -586,7 +586,7 @@ def process_mails():
         mail_id = os.path.splitext(os.path.basename(eml_path))[0]
         if not arguments.get("--eml_orig"):
             mail.__setitem__("X-Forwarded-For", "0.0.0.0")  # to be considered as main mail
-        parser = Parser(mail, dev_mode, "", resize_inline_images=True)
+        parser = Parser(mail, dev_mode, "")
         headers = parser.headers
         o_attachments = parser.attachments()
         # [k: v for k, v in at.items() if k != 'content'} for at in o_attachments]
@@ -630,7 +630,7 @@ def process_mails():
         mail = mail_info.mail
         main_file_path = get_preview_pdf_path(config, mail_id)
         try:
-            parser = Parser(mail, dev_mode, mail_id, resize_inline_images=True)
+            parser = Parser(mail, dev_mode, mail_id)
             headers = parser.headers
             if parser.origin == "Generic inbox":
                 if not dev_mode:
