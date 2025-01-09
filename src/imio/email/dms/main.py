@@ -135,7 +135,7 @@ Cordialement.\n
 Bonjour,
 Votre adresse email {3} n'est pas autorisée à transférer un email vers iA.docs.
 Si cette action est justifiée, veuillez prendre contact avec votre référent interne.\n
-Le mail concerné est en pièce jointe.\n
+Le mail concerné est en pièce jointe (sujet:"{4}").\n
 Client ID : {0}
 IMAP login : {1}
 mail id : {2}
@@ -156,22 +156,16 @@ IMAP login : {1}\n
         self.headers = headers
 
     def _set_message(self, msg, unformatted_message, format_args):
-        def get_mail_len_status(additional):
-            """Returns some info following mail length regarding max length.
+        mail_string = self.mail.as_string()
+        len_ok = True
+        additional = ""
 
-            :param mail: mail object
-            :param additional: unicode message to return if mail is bigger than max size
-            :return: mail as string, bool indicating if len is smaller, message for the user
-            """
-            mail_string = self.mail.as_string()
-            if len(mail_string) > MAX_SIZE_ATTACH:
-                return mail_string, False, additional
-            return mail_string, True, ""
+        if len(mail_string) > MAX_SIZE_ATTACH:
+            len_ok = False
+            additional = "La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !"
 
-        mail_string, len_ok, additional = get_mail_len_status("La pièce jointe est trop grosse: on ne sait pas l'envoyer par mail !")
         main_text = MIMEText(unformatted_message.format(*format_args, additional=additional), "plain")
         msg.attach(main_text)
-
         if len_ok:
             attachment = MIMEBase("message", "rfc822")
             attachment.set_payload(mail_string, "utf8")
@@ -181,9 +175,7 @@ IMAP login : {1}\n
         return msg
 
     def _send(self, msg):
-        host = str(self.smtp_infos["host"])
-        port = int(self.smtp_infos["port"])
-        smtp = SMTP(host, port)
+        smtp = SMTP(str(self.smtp_infos["host"]), int(self.smtp_infos["port"]))
         smtp.send_message(msg)
         smtp.quit()
 
@@ -208,7 +200,9 @@ IMAP login : {1}\n
                 except Exception:
                     error_msg = error.reason
 
-            msg = self._set_message(msg, self.ERROR_MAIL_SUPPORT, format_args=(client_id, login, mail_id, error.__class__, error_msg))
+            msg = self._set_message(
+                msg, self.ERROR_MAIL_SUPPORT, format_args=(client_id, login, mail_id, error.__class__, error_msg)
+            )
             self._send(msg)
 
         def to_agent():
@@ -238,38 +232,37 @@ IMAP login : {1}\n
 
         self._send(msg)
 
-    def ignored(self):
-        client_id = self.config["webservice"]["client_id"]
-        login = self.config["mailbox"]["login"]
-        smtp_infos = self.config["smtp"]
-        sender = smtp_infos["sender"]
-        recipient = smtp_infos["recipient"]
-        from_ = self.headers["Agent"][0][1]
-        mail_id = self.headers["Agent"][0][1]
-
+    def ignored(self, mail_id):
         msg = MIMEMultipart()
-        msg["Subject"] = "Transfert non autorisé de {} pour le client {}".format(from_, client_id)
-        msg["From"] = sender
-        msg["To"] = from_
-        msg["Bcc"] = recipient
-        msg = self._set_message(msg, self.IGNORED_MAIL, format_args=(client_id, login, mail_id, from_))
-
+        msg["Subject"] = "Transfert non autorisé de {} pour le client {}".format(
+            self.headers["Agent"][0][1], self.config["webservice"]["client_id"]
+        )
+        msg["From"] = self.smtp_infos["sender"]
+        msg["To"] = self.headers["Agent"][0][1]
+        msg["Bcc"] = self.smtp_infos["recipient"]
+        msg = self._set_message(
+            msg,
+            self.IGNORED_MAIL,
+            format_args=(
+                self.config["webservice"]["client_id"],
+                self.config["mailbox"]["login"],
+                mail_id,
+                self.headers["Agent"][0][1],
+                self.headers["Subject"],
+            ),
+        )
         self._send(msg)
 
     def result(self, subject, message):
-        client_id = self.config["webservice"]["client_id"]
-        login = self.config["mailbox"]["login"]
-        smtp_infos = self.config["smtp"]
-        sender = smtp_infos["sender"]
-        recipient = smtp_infos["recipient"]
-
         msg = MIMEMultipart()
-        msg["Subject"] = "{} for client {}".format(subject, client_id)
-        msg["From"] = sender
-        msg["To"] = recipient
-        main_text = MIMEText(self.RESULT_MAIL.format(client_id, login, message), "plain")
+        msg["Subject"] = "{} for client {}".format(subject, self.config["webservice"]["client_id"])
+        msg["From"] = self.smtp_infos["sender"]
+        msg["To"] = self.smtp_infos["recipient"]
+        main_text = MIMEText(
+            self.RESULT_MAIL.format(self.config["webservice"]["client_id"], self.config["mailbox"]["login"], message),
+            "plain",
+        )
         msg.attach(main_text)
-
         self._send(msg)
 
 
@@ -635,7 +628,7 @@ def process_mails():
                 # logger.error('Rejecting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
                 ignored += 1
                 try:
-                    Notify(mail, config, headers).ignored()
+                    Notify(mail, config, headers).ignored(mail_id)
                 except Exception:  # better to continue than advise user
                     pass
                 continue
