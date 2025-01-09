@@ -100,22 +100,23 @@ mail id : {2}\n
 Corresponding exception : {3}
 {4}\n
 {additional}\n
-    """
+"""
 
     ERROR_MAIL_AGENT = """
 Cher utilisateur d'iA.Docs,
 
-Vous avez tenté d'envoyer un email avec iA.Docs. Cependant, une erreur est survenue lors de la manipulation de cet email ("{0}").\n
-Nous avons été averti de l'erreur et faisons au plus vite pour rétablir la situation.\n
-Ne réessayez pas d'envoyer ce mail.\n
+Vous avez transféré un email vers iA.Docs ("sujet:{0}").
+Malheureusement, une erreur est survenue lors du traitement de cet email et il n'a pas été intégré dans l'application.\n
+Nous avons été averti de l'erreur et allons y regarder.\n
+Il ne sert à rien d'envoyer à nouveau l'email.\n
 Veuillez nous excuser pour la gêne occasionnée.\n
 {additional}\n
-    """
+"""
 
     UNSUPPORTED_ORIGIN_EMAIL = """
 Cher utilisateur d'iA.Docs,
 
-Le transfert de l'email attaché ("{0}") a été rejeté car il n'a pas été transféré correctement.\n
+Le transfert de l'email attaché (sujet:"{0}") a été rejeté car il n'a pas été transféré correctement.\n
 Veuillez refaire le transfert du mail original en transférant "en tant que pièce jointe".\n
 Si vous utilisez Microsoft Outlook:\n
 - Dans le ruban, cliquez sur la flèche du ménu déroulant située sur le bouton de transfert\n
@@ -129,7 +130,7 @@ Si vous utilisez Mozilla Thunderbird:\n
 \n
 Cordialement.\n
 {additional}\n
-    """
+"""
 
     IGNORED_MAIL = """
 Bonjour,
@@ -141,13 +142,13 @@ IMAP login : {1}
 mail id : {2}
 pattern : "caché"
 {additional}\n
-    """
+"""
 
     RESULT_MAIL = """
 Client ID : {0}
 IMAP login : {1}\n
 {2}\n
-    """
+"""
 
     def __init__(self, mail, config, headers):
         self.mail = mail
@@ -180,16 +181,11 @@ IMAP login : {1}\n
         smtp.quit()
 
     def exception(self, mail_id, error):
-        def to_support(mail_id, error):
-            client_id = self.config["webservice"]["client_id"]
-            login = self.config["mailbox"]["login"]
-            sender = self.smtp_infos["sender"]
-            recipient = self.smtp_infos["recipient"]
-
+        def to_support():
             msg = MIMEMultipart()
-            msg["Subject"] = "Error handling an email for client {}".format(client_id)
-            msg["From"] = sender
-            msg["To"] = recipient
+            msg["Subject"] = "Error handling an email for client {}".format(self.config["webservice"]["client_id"])
+            msg["From"] = self.smtp_infos["sender"]
+            msg["To"] = self.smtp_infos["recipient"]
 
             error_msg = error
             if hasattr(error, "message"):
@@ -201,35 +197,36 @@ IMAP login : {1}\n
                     error_msg = error.reason
 
             msg = self._set_message(
-                msg, self.ERROR_MAIL_SUPPORT, format_args=(client_id, login, mail_id, error.__class__, error_msg)
+                msg,
+                self.ERROR_MAIL_SUPPORT,
+                format_args=(
+                    self.config["webservice"]["client_id"],
+                    self.config["mailbox"]["login"],
+                    mail_id,
+                    error.__class__,
+                    error_msg,
+                ),
             )
             self._send(msg)
 
         def to_agent():
-            sender = self.smtp_infos["sender"]
-            recipient = self.headers["From"][0][1]
-
             msg = MIMEMultipart()
             msg["Subject"] = "Votre plateforme iA.Docs a rencontré un problème"
-            msg["From"] = sender
-            msg["To"] = recipient
+            msg["From"] = self.smtp_infos["sender"]
+            msg["To"] = self.headers["Agent"][0][1]
             msg = self._set_message(msg, self.ERROR_MAIL_AGENT, format_args=(self.headers["Subject"],))
-
             self._send(msg)
 
-        to_support(mail_id, error)
-        to_agent()
+        to_support()
+        if self.headers and "Agent" in self.headers:
+            to_agent()
 
     def unsupported_origin(self):
-        sender = self.smtp_infos["sender"]
-        from_ = self.headers["From"][0][1]
-
         msg = MIMEMultipart()
         msg["Subject"] = "Erreur de transfert de votre email dans iA.Docs"
-        msg["From"] = sender
-        msg["To"] = from_
+        msg["From"] = self.smtp_infos["sender"]
+        msg["To"] = self.headers["From"][0][1]
         msg = self._set_message(msg, self.UNSUPPORTED_ORIGIN_EMAIL, format_args=(self.headers["Subject"],))
-
         self._send(msg)
 
     def ignored(self, mail_id):
@@ -520,7 +517,7 @@ def process_mails():
             save_as_eml(filename, message)
         except Exception as e:
             logger.error(e, exc_info=True)
-            Notify(mail, config, parsed.headers).exception(mail_id, e)
+            Notify(mail, config, None).exception(mail_id, e)
             if not dev_mode:
                 handler.mark_mail_as_error(mail_id)
         handler.disconnect()
@@ -607,6 +604,7 @@ def process_mails():
         mail_id = mail_info.id
         mail = mail_info.mail
         main_file_path = get_preview_pdf_path(config, mail_id)
+        parser = None
         try:
             parser = Parser(mail, dev_mode, mail_id)
             headers = parser.headers
@@ -647,7 +645,11 @@ def process_mails():
             imported += 1
         except Exception as e:
             logger.error(e, exc_info=True)
-            Notify(mail, config, parsed.headers).exception(mail_id, e)
+            try:
+                # check parser and parser.headers
+                Notify(mail, config, parser.headers).exception(mail_id, e)
+            except Exception:
+                Notify(mail, config, None).exception(mail_id, e)
             if not dev_mode:
                 handler.mark_mail_as_error(mail_id)
             errors += 1
