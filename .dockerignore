@@ -1,0 +1,11 @@
+.github
+bin
+counters
+devel
+develop-eggs
+docs
+lib
+optimized
+output
+scripts
+.*

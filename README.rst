@@ -25,6 +25,14 @@ To process emails, you can execute ::
 See `config.ini` file for various parameters.
 
 
+For usage with Docker, it's similar to `bin/process_mails` but you need to build the Docker image first ::
+
+```bash
+docker build -t imio.email.dms .
+docker run --rm imio.email.dms config.ini
+```
+
+
 Release
 -------
 
