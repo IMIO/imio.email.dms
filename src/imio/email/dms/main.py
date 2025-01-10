@@ -41,6 +41,7 @@ from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser  # noqa
 from imio.email.parser.utils import stop  # noqa
 from imio.email.parser.utils import structure  # noqa
+from imio.pyutils.system import runCommand
 from io import BytesIO
 from PIL import Image
 from PIL import ImageFile
@@ -328,22 +329,12 @@ def compress_pdf(original_pdf_content):
             output_temp_file_name = output_temp_file.name
 
         # Ghostscript command
-        gs_command = [
-            "gs",
-            "-sDEVICE=pdfwrite",
-            "-dCompatibilityLevel=1.4",
-            "-dPDFSETTINGS=/ebook",  # Medium resolution (good for reading).
-            "-dNOPAUSE",
-            "-dQUIET",
-            "-dBATCH",
-            f"-sOutputFile={output_temp_file_name}",
-            input_temp_file_name,
-        ]
+        # -dPDFSETTINGS=/ebook : Medium resolution (good for reading)
+        gs_command = f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile={output_temp_file_name} {input_temp_file_name}"
+        _, stderr, returncode = runCommand(gs_command)
 
-        result = subprocess.run(gs_command, capture_output=True, text=True)
-
-        if result.returncode != 0:
-            raise RuntimeError(f"Ghostscript failed: {result.stderr}")
+        if returncode != 0:
+            raise RuntimeError(f"Ghostscript failed: {stderr}")
 
         with open(output_temp_file_name, "rb") as f:
             compressed_pdf_content = f.read()
