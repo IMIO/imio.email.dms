@@ -413,9 +413,17 @@ def modify_attachments(mail_id, attachments):
                     dic["content"] = new_content
         if dic["type"] == "application/pdf":
             compressed_pdf_content = compress_pdf(dic["content"])
-            dic["content"] = compressed_pdf_content
-            dic["len"] = len(compressed_pdf_content)
-            dic["filename"] = dic["filename"].replace(".pdf", "-compressed.pdf")
+            compressed_pdf_content_len = len(compressed_pdf_content)
+            if compressed_pdf_content_len < dic["len"]:
+                dic["content"] = compressed_pdf_content
+                dic["len"] = compressed_pdf_content_len
+                dic["filename"] = re.sub(r"(\.\w+)$", r"-(compressé)\1", dic["filename"])
+            else:
+                logger.warning(
+                    "{}: compressed pdf '{}' is bigger than original pdf ({} > {}), ignoring compressed file...".format(
+                        mail_id, dic["filename"], compressed_pdf_content_len, dic["len"]
+                    )
+                )
         new_lst.append(dic)
     return new_lst
 
