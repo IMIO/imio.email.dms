@@ -61,9 +61,8 @@ import requests
 import six
 import sys
 import tarfile
-import zc.lockfile
-import subprocess
 import tempfile
+import zc.lockfile
 
 
 try:
@@ -319,22 +318,25 @@ def get_preview_pdf_path(config, mail_id):
 
 
 def compress_pdf(original_pdf_content):
-    with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.pdf') as input_temp_file:
+    with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".pdf") as input_temp_file:
         input_temp_file.write(original_pdf_content)
         input_temp_file_name = input_temp_file.name
 
     try:
         # Create a temporary file for output
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as output_temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as output_temp_file:
             output_temp_file_name = output_temp_file.name
 
         # Ghostscript command
         # -dPDFSETTINGS=/ebook : Medium resolution (good for reading)
-        gs_command = f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile={output_temp_file_name} {input_temp_file_name}"
+        gs_command = (
+            f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH "
+            f"-sOutputFile={output_temp_file_name} {input_temp_file_name}"
+        )
         _, stderr, returncode = runCommand(gs_command)
 
         if returncode != 0:
-            raise RuntimeError(f"Ghostscript failed: {stderr}")
+            raise RuntimeError("Ghostscript failed: {}".format("\n".join(stderr)))
 
         with open(output_temp_file_name, "rb") as f:
             compressed_pdf_content = f.read()
@@ -417,7 +419,7 @@ def modify_attachments(mail_id, attachments):
             if compressed_pdf_content_len < dic["len"]:
                 dic["content"] = compressed_pdf_content
                 dic["len"] = compressed_pdf_content_len
-                dic["filename"] = re.sub(r"(\.\w+)$", r"-(compressé)\1", dic["filename"])
+                dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
             else:
                 logger.warning(
                     "{}: compressed pdf '{}' is bigger than original pdf ({} > {}), ignoring compressed file...".format(
