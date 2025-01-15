@@ -1,30 +1,53 @@
-FROM python:3.7-buster
+FROM harbor.imio.be/common/base:py3-ubuntu-22.04 AS builder
 
-RUN apt-get update && apt-get install -y \
-    dumb-init \
-    locales \
-    vim \
-    xfonts-75dpi \
-    xfonts-base
+RUN apt-get update \
+    && apt-get install -y \
+        gcc \
+        git \
+        libjpeg62-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        python3-dev
 
-WORKDIR /tmp
+WORKDIR /home/imio/
 
-RUN wget -O wkhtmltox.deb "https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.stretch_amd64.deb" && \
-    dpkg -i wkhtmltox.deb && \
-    rm wkhtmltox.deb && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /var/tmp/*
+COPY --chown=imio requirements.txt /home/imio/requirements.txt
+RUN pip install -r requirements.txt
 
-ADD *.rst buildout.cfg entrypoint.sh requirements.txt setup.py sources.cfg versions.cfg /app/
-ADD src /app/src
+COPY --chown=imio src /home/imio/src
+COPY --chown=imio *.cfg *.rst setup.py /home/imio/
+RUN su -c "buildout -c buildout.cfg -t 30 -N" -s /bin/sh imio
 
-WORKDIR /app
 
-RUN ln -sf /usr/share/zoneinfo/Europe/Brussels /etc/localtime
+FROM harbor.imio.be/common/base:py3-ubuntu-22.04
 
-RUN chmod +x /app/entrypoint.sh
+ADD https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb /tmp/wkhtmltox.deb
 
-RUN pip install -r requirements.txt && \
-    buildout
+RUN apt-get update \
+    && apt-get install -y \
+        dumb-init \
+        fontconfig \
+        ghostscript \
+        libjpeg-turbo8 \
+        libjpeg62-dev \
+        libmagic-dev \
+        libmagic1 \
+        libopenjp2-7-dev \
+        libxext6 \
+        libxrender1 \
+        xfonts-75dpi \
+        xfonts-base \
+    && dpkg -i /tmp/wkhtmltox.deb \
+    && rm /tmp/wkhtmltox.deb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/tmp/*
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+WORKDIR /home/imio/
+
+COPY --from=builder --chown=imio /home/imio .
+COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+COPY --chown=imio --chmod=500 entrypoint.sh /home/imio/entrypoint.sh
+
+USER imio
+
+ENTRYPOINT ["/home/imio/entrypoint.sh"]
