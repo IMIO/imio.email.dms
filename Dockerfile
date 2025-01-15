@@ -1,31 +1,53 @@
-FROM python:3.10-buster
+FROM harbor.imio.be/common/base:py3-ubuntu-22.04 AS builder
 
-WORKDIR /tmp
+RUN apt-get update \
+    && apt-get install -y \
+        gcc \
+        git \
+        libjpeg62-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        python3-dev
+
+WORKDIR /home/imio/
+
+COPY --chown=imio requirements.txt /home/imio/requirements.txt
+RUN pip install -r requirements.txt
+
+COPY --chown=imio src /home/imio/src
+COPY --chown=imio *.cfg *.rst setup.py /home/imio/
+RUN su -c "buildout -c buildout.cfg -t 30 -N" -s /bin/sh imio
+
+
+FROM harbor.imio.be/common/base:py3-ubuntu-22.04
+
+ADD https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb /tmp/wkhtmltox.deb
 
 RUN apt-get update \
     && apt-get install -y \
         dumb-init \
-        locales \
-        vim \
+        fontconfig \
+        ghostscript \
+        libjpeg-turbo8 \
+        libjpeg62-dev \
+        libmagic-dev \
+        libmagic1 \
+        libopenjp2-7-dev \
+        libxext6 \
+        libxrender1 \
         xfonts-75dpi \
         xfonts-base \
-    && wget -O wkhtmltox.deb "https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.stretch_amd64.deb" \
-    && dpkg -i wkhtmltox.deb \
-    && rm wkhtmltox.deb \
+    && dpkg -i /tmp/wkhtmltox.deb \
+    && rm /tmp/wkhtmltox.deb \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/tmp/*
 
-WORKDIR /app
+WORKDIR /home/imio/
 
-COPY *.rst entrypoint.sh /app/
-RUN chmod +x /app/entrypoint.sh
+COPY --from=builder --chown=imio /home/imio .
+COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+COPY --chown=imio --chmod=500 entrypoint.sh /home/imio/entrypoint.sh
 
-COPY requirements.txt /app/requirements.txt
-RUN ln -sf /usr/share/zoneinfo/Europe/Brussels /etc/localtime \
-    && pip install -r requirements.txt
+USER imio
 
-COPY buildout.cfg setup.py sources.cfg versions.cfg /app/
-COPY src /app/src
-RUN buildout
-
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/home/imio/entrypoint.sh"]
