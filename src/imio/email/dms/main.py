@@ -394,11 +394,12 @@ def process_mails():
         o_attachments = parser.attachments
         # [k: v for k, v in at.items() if k != 'content'} for at in o_attachments]
         attachments = modify_attachments(mail_id, o_attachments)
-        main_file_path = get_preview_pdf_path(config, mail_id)
-        logger.info("pdf file {}".format(main_file_path))
         try:
+            main_file_path = get_preview_pdf_path(config, mail_id)
+            logger.info("pdf file {}".format(main_file_path))
             parser.generate_pdf(main_file_path)
         except Exception:
+            logger.error("Error generating pdf file", exc_info=True)
             main_file_path = main_file_path.replace(".pdf", ".eml")
             save_as_eml(main_file_path, parser.message)
         send_to_ws(config, headers, main_file_path, attachments, mail_id)
@@ -458,11 +459,12 @@ def process_mails():
                     pass
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
-            o_attachments = parser.attachments
-            attachments = modify_attachments(mail_id, o_attachments)
             try:
+                o_attachments = parser.attachments
+                attachments = modify_attachments(mail_id, o_attachments)
                 parser.generate_pdf(main_file_path)
             except Exception:
+                logger.error("Error generating pdf file", exc_info=True)
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace(".pdf", ".eml")
                 save_as_eml(main_file_path, parser.message)
