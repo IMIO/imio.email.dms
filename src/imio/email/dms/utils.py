@@ -46,6 +46,12 @@ def safe_text(value, encoding="utf-8") -> str:
     return value
 
 
+def save_attachment(folder, at_dic):
+    file_path = os.path.join(folder, at_dic["filename"])
+    with open(file_path, "wb") as file:
+        file.write(at_dic["content"])
+
+
 def save_as_eml(path, message):
     with open(path, "w") as emlfile:
         gen = generator.Generator(emlfile)
