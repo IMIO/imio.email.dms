@@ -225,6 +225,8 @@ def resize_inline_images(mail_id, message, attachments):
             cte="base64",
             cid=part.get("Content-ID"),
         )
+    if not cids:
+        return message
     # save_as_eml("/tmp/a.eml", new_message)
     # resize inline images in html part
     for part in new_message.walk():
