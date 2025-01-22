@@ -9,6 +9,8 @@ Changelog
   [sgeulette]
 - Added `utils.save_attachment` function.
   [sgeulette]
+- Improved `utils.get_reduced_size` to be more flexible.
+  [sgeulette]
 - imio.email.parser improvements.
   [sgeulette]
 
