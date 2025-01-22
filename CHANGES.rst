@@ -11,6 +11,12 @@ Changelog
   [sgeulette]
 - Improved `utils.get_reduced_size` to be more flexible.
   [sgeulette]
+- Added notification for agent if exception occurs.
+  [cadam]
+- Changed options in `process_mails` to be more flexible.
+  [sgeulette]
+- Resized inline images in email body.
+  [sgeulette,cadam]
 - imio.email.parser improvements.
   [sgeulette]
 
