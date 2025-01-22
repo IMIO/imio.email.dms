@@ -7,6 +7,8 @@ Changelog
 
 - Replaced `utils.safe_unicode` by `utils.safe_text`.
   [sgeulette]
+- Added `utils.save_attachment` function.
+  [sgeulette]
 - imio.email.parser improvements.
   [sgeulette]
 
