@@ -225,6 +225,7 @@ def resize_inline_images(mail_id, message, attachments):
             cte="base64",
             cid=part.get("Content-ID"),
         )
+        logger.info(f"{mail_id}: replaced inline {at['cid']} ({at['filename']})")
     if not cids:
         return message
     # save_as_eml("/tmp/a.eml", new_message)
@@ -233,7 +234,7 @@ def resize_inline_images(mail_id, message, attachments):
         if part.get_content_type() != "text/html":
             continue
         html_part = part
-        change = False
+        changes = set()
         soup = BeautifulSoup(html_part.get_content(), "html.parser")
         for img_tag in soup.find_all("img"):
             img_cid = img_tag.get("src", "").replace("cid:", "").strip()
@@ -242,22 +243,24 @@ def resize_inline_images(mail_id, message, attachments):
             cids[img_cid]["used"] = True
             if "width" in img_tag.attrs:
                 img_tag["width"] = cids[img_cid]["sz"][0]
-                change = True
+                changes.add(img_cid)
             if "height" in img_tag.attrs:
                 img_tag["height"] = cids[img_cid]["sz"][1]
-                change = True
+                changes.add(img_cid)
             style = img_tag.get("style", "")
             if style:
                 if "width:" in style:
                     style = re.sub(r"width:\s*\d+(px|%)", f"width: {cids[img_cid]['sz'][0]}px", style)
                     img_tag["style"] = style
-                    change = True
+                    changes.add(img_cid)
                 if "height:" in style:
                     style = re.sub(r"height:\s*\d+(px|%)", f"height: {cids[img_cid]['sz'][1]}px", style)
                     img_tag["style"] = style
-                    change = True
-        if change:
+                    changes.add(img_cid)
+        if changes:
             html_part.set_content(soup.prettify(), subtype="html")
+            c_str = ", ".join(changes)
+            logger.info(f"{mail_id}: resized inline images cids '{c_str}' in html part")
     for cid in cids:
         if not cids[cid]["used"]:
             logger.warning("{}: inline image '{}' not found".format(mail_id, cid))
