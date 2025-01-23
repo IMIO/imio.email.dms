@@ -14,7 +14,7 @@ jobs:
     if: contains(github.event.head_commit.message, 'Back to development:') == false && contains(github.event.head_commit.message, 'Preparing release') == false
     steps:
       - name: Build push and notify
-        uses: IMIO/gha/build-push-notify@v2.0
+        uses: IMIO/gha/build-push-notify@v4
         with:
           IMAGE_NAME: ${{ vars.IMAGE_NAME }}
           IMAGE_TAGS: |

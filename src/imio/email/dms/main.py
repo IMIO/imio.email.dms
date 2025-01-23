@@ -43,6 +43,7 @@ from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser  # noqa
 from imio.email.parser.utils import stop  # noqa
 from imio.email.parser.utils import structure  # noqa
+from imio.pyutils.system import runCommand
 from io import BytesIO
 from PIL import Image
 from PIL import ImageFile
@@ -63,6 +64,7 @@ import requests
 import six
 import sys
 import tarfile
+import tempfile
 import zc.lockfile
 
 
@@ -118,6 +120,39 @@ def get_preview_pdf_path(config, mail_id):
     else:
         filename = "{0}.pdf".format(mail_id)
     return os.path.join(output_dir, filename)
+
+
+def compress_pdf(original_pdf_content):
+    with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".pdf") as input_temp_file:
+        input_temp_file.write(original_pdf_content)
+        input_temp_file_name = input_temp_file.name
+
+    try:
+        # Create a temporary file for output
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as output_temp_file:
+            output_temp_file_name = output_temp_file.name
+
+        # Ghostscript command
+        # -dPDFSETTINGS=/ebook : Medium resolution (good for reading)
+        gs_command = (
+            f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH "
+            f"-sOutputFile={output_temp_file_name} {input_temp_file_name}"
+        )
+        _, stderr, returncode = runCommand(gs_command)
+
+        if returncode != 0:
+            raise RuntimeError("Ghostscript failed: {}".format("\n".join(stderr)))
+
+        with open(output_temp_file_name, "rb") as f:
+            compressed_pdf_content = f.read()
+
+    finally:
+        # Clean temporary files
+        os.unlink(input_temp_file_name)
+        if os.path.exists(output_temp_file_name):
+            os.unlink(output_temp_file_name)
+
+    return compressed_pdf_content
 
 
 def modify_attachments(mail_id, attachments, with_inline=True):
@@ -203,6 +238,17 @@ def modify_attachments(mail_id, attachments, with_inline=True):
                     dic["len"] = new_len
                     dic["content"] = new_content
                     dic["modified"] = True
+
+        if dic["type"] == "application/pdf":
+            compressed_pdf_content = compress_pdf(dic["content"])
+            new_pdf_len = len(compressed_pdf_content)
+            if new_pdf_len < dic["len"]:
+                dic["content"] = compressed_pdf_content
+                dic["len"] = new_pdf_len
+                dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
+                if dev_mode:
+                    logger.info("{}: new pdf '{}' ({} => {})".format(mail_id, dic["filename"], dic["len"], new_pdf_len))
+
         new_lst.append(dic)
     return new_lst
 
