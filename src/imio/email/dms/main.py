@@ -121,7 +121,13 @@ def get_preview_pdf_path(config, mail_id):
 
 
 def modify_attachments(mail_id, attachments, with_inline=True):
-    """Remove inline attachments and reduce size attachments"""
+    """Modify parser attachments by reducing images size
+
+    :param mail_id: mail id
+    :param attachments: list of attachments
+    :param with_inline: keep inline images to reduce size too
+    :return: new list of attachments
+    """
     new_lst = []
     for dic in attachments:
         # {k: v for k, v in dic.items() if k != 'content'}
