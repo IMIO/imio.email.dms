@@ -19,6 +19,8 @@ Changelog
   [sgeulette,cadam]
 - imio.email.parser improvements.
   [sgeulette]
+- Added `main.compress_pdf` function to compress pdf attachment.
+  [cadam]
 
 0.28.0 (2024-10-07)
 -------------------
