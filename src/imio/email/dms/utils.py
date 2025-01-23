@@ -46,6 +46,12 @@ def safe_text(value, encoding="utf-8") -> str:
     return value
 
 
+def save_attachment(folder, at_dic):
+    file_path = os.path.join(folder, at_dic["filename"])
+    with open(file_path, "wb") as file:
+        file.write(at_dic["content"])
+
+
 def save_as_eml(path, message):
     with open(path, "w") as emlfile:
         gen = generator.Generator(emlfile)
@@ -83,19 +89,32 @@ def get_next_id(config, dev_infos):
     return next_id, client_id
 
 
-def get_reduced_size(size, img_size_limit):
-    """Returns a bool if size has been reduced and the new size tuple"""
-    greatest = 0
-    if size[0] < size[1]:
-        greatest = 1
-    if size[greatest] < img_size_limit:
-        return False, None
-    lowest = int(not bool(greatest))
-    percent = img_size_limit / float(size[greatest])
-    new_size = [0, 0]
-    new_size[greatest] = img_size_limit
-    new_size[lowest] = int((float(size[lowest]) * float(percent)))
-    return True, tuple(new_size)
+def get_reduced_size(size, max_size):
+    """Resize an image size while maintaining the aspect ratio.
+
+    :param size: Original size of the image (width, height).
+    :param max_size: Maximum size (max_width, max_height).
+    :return: A boolean indicating if resizing occurred and the new size (width, height).
+    """
+    original_width, original_height = size
+    max_width, max_height = max_size
+
+    if max_width is None and max_height is None:
+        return False, size
+
+    aspect_ratio = original_width / original_height
+    new_width, new_height = original_width, original_height
+
+    if max_width is not None and new_width > max_width:
+        new_width = max_width
+        new_height = int(new_width / aspect_ratio)
+
+    if max_height is not None and new_height > max_height:
+        new_height = max_height
+        new_width = int(new_height * aspect_ratio)
+
+    size_reduced = new_width != original_width or new_height != original_height
+    return size_reduced, (new_width, new_height)
 
 
 def get_unique_name(filename, files):

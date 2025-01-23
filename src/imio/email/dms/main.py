@@ -19,10 +19,11 @@ Options:
     --stats                 Get email stats following stats.
     --mail_id=<mail_id>     Use this mail id.
 """
-
+from bs4 import BeautifulSoup
 from datetime import datetime
 from datetime import timedelta
 from docopt import docopt
+from email2pdf2 import email2pdf2
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -36,6 +37,7 @@ from imio.email.dms.utils import get_reduced_size
 from imio.email.dms.utils import get_unique_name
 from imio.email.dms.utils import safe_text
 from imio.email.dms.utils import save_as_eml
+from imio.email.dms.utils import save_attachment  # noqa
 from imio.email.dms.utils import set_next_id
 from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser  # noqa
@@ -52,6 +54,7 @@ from time import sleep
 from xml.etree.ElementTree import ParseError
 
 import configparser
+import copy
 import email
 import imaplib
 import json
@@ -152,24 +155,37 @@ def compress_pdf(original_pdf_content):
     return compressed_pdf_content
 
 
-def modify_attachments(mail_id, attachments):
-    """Remove inline attachments and reduce size attachments"""
+def modify_attachments(mail_id, attachments, with_inline=True):
+    """Modify parser attachments by reducing images size
+
+    :param mail_id: mail id
+    :param attachments: list of attachments
+    :param with_inline: keep inline images to reduce size too
+    :return: new list of attachments
+    """
     new_lst = []
     for dic in attachments:
+        # {k: v for k, v in dic.items() if k != 'content'}
+        is_inline = False
         # we pass inline image, often used in signature. This image will be in generated pdf
         if dic["type"].startswith("image/") and dic["disp"] == "inline":
-            if dev_mode:
-                logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic["filename"], dic["len"]))
-            continue
+            if with_inline:
+                is_inline = True
+            else:
+                if dev_mode:
+                    logger.info("{}: skipped inline image '{}' of size {}".format(mail_id, dic["filename"], dic["len"]))
+                continue
         if dic["type"].startswith("image/"):
             orient_mod = size_mod = False
             try:
                 img = Image.open(BytesIO(dic["content"]))
             except UnidentifiedImageError:
-                new_lst.append(dic)  # kept original image
+                if not is_inline:
+                    new_lst.append(dic)  # kept original image
                 continue
             except Image.DecompressionBombError:  # never append because Image.MAX_IMAGE_PIXELS is set to None
                 continue
+            dic["is_inline"] = is_inline
             try:
                 exif = img.getexif()
                 orient = exif.get(EXIF_ORIENTATION, 0)
@@ -180,7 +196,7 @@ def modify_attachments(mail_id, attachments):
                 orient = 0
             new_img = img
             # if problem, si ImageMagik use https://github.com/IMIO/appy/blob/master/appy/pod/doc_importers.py#L545
-            if orient and orient != 1:
+            if not is_inline and orient and orient != 1:
                 try:
                     new_img = ImageOps.exif_transpose(img)
                     orient_mod = True
@@ -188,14 +204,18 @@ def modify_attachments(mail_id, attachments):
                         logger.info("{}: reoriented image '{}' from {}".format(mail_id, dic["filename"], orient))
                 except Exception:
                     pass
-            if dic["len"] > 100000:
-                is_reduced, new_size = get_reduced_size(new_img.size, img_size_limit)
-                if is_reduced:
-                    if dev_mode:
-                        logger.info("{}: resized image '{}'".format(mail_id, dic["filename"]))
-                    # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
-                    new_img = new_img.resize(new_size, Image.BICUBIC)
-                    size_mod = True
+            is_reduced = False
+            if is_inline:
+                is_reduced, new_size = get_reduced_size(new_img.size, (1000, None))
+            elif dic["len"] > 100000:
+                is_reduced, new_size = get_reduced_size(new_img.size, (img_size_limit, img_size_limit))
+            if is_reduced:
+                if dev_mode:
+                    logger.info("{}: resized image '{}'".format(mail_id, dic["filename"]))
+                # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
+                new_img = new_img.resize(new_size, Image.BICUBIC)
+                dic["size"] = new_size
+                size_mod = True
 
             if size_mod or orient_mod:
                 new_bytes = BytesIO()
@@ -211,25 +231,115 @@ def modify_attachments(mail_id, attachments):
                     dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
                     if dev_mode:
                         logger.info(
-                            "{}: new image '{}' ({} => {})".format(mail_id, dic["filename"], dic["len"], new_len)
+                            "{}: new image '{}' ({} => {}){}".format(
+                                mail_id, dic["filename"], dic["len"], new_len, is_inline and " (inline)" or ""
+                            )
                         )
                     dic["len"] = new_len
                     dic["content"] = new_content
+                    dic["modified"] = True
+
         if dic["type"] == "application/pdf":
             compressed_pdf_content = compress_pdf(dic["content"])
-            compressed_pdf_content_len = len(compressed_pdf_content)
-            if compressed_pdf_content_len < dic["len"]:
+            new_pdf_len = len(compressed_pdf_content)
+            if new_pdf_len < dic["len"]:
                 dic["content"] = compressed_pdf_content
-                dic["len"] = compressed_pdf_content_len
+                dic["len"] = new_pdf_len
                 dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
-            else:
-                logger.warning(
-                    "{}: compressed pdf '{}' is bigger than original pdf ({} > {}), ignoring compressed file...".format(
-                        mail_id, dic["filename"], compressed_pdf_content_len, dic["len"]
-                    )
-                )
+                if dev_mode:
+                    logger.info("{}: new pdf '{}' ({} => {})".format(mail_id, dic["filename"], dic["len"], new_pdf_len))
+
         new_lst.append(dic)
     return new_lst
+
+
+def resize_inline_images(mail_id, message, attachments):
+    new_message = copy.deepcopy(message)
+    size_pattern = r'(size=["\'])([^"\']*)(["\'])'
+    cids = {}
+    # replace inline image content with reduced one
+    for at in attachments:
+        if not (at["type"].startswith("image/") and at["disp"] == "inline" and at.get("modified")):
+            continue
+        part = email2pdf2.find_part_by_content_id(new_message, at["cid"])
+        if not part:
+            continue
+        cids[at["cid"].strip("<>")] = {"sz": at.get("size"), "used": False}
+        disposition = part.get("Content-Disposition")
+        if disposition and "size=" in disposition:
+            disposition = re.sub(size_pattern, lambda m: f"{m.group(1)}{at['len']}{m.group(3)}", disposition)
+        # Replace the image content in the new message
+        part.set_content(
+            at["content"],
+            maintype=part.get_content_maintype(),
+            subtype=part.get_content_subtype(),
+            disposition=disposition,
+            cte="base64",
+            cid=part.get("Content-ID"),
+        )
+        logger.info(f"{mail_id}: replaced inline {at['cid']} ({at['filename']})")
+    if not cids:
+        return message
+    # save_as_eml("/tmp/a.eml", new_message)
+    # resize inline images in html part
+    for part in new_message.walk():
+        if part.get_content_type() != "text/html":
+            continue
+        html_part = part
+        changes = set()
+        soup = BeautifulSoup(html_part.get_content(), "html.parser")
+        for img_tag in soup.find_all("img"):
+            img_cid = img_tag.get("src", "").replace("cid:", "").strip()
+            if not img_cid or img_cid not in cids:
+                continue
+            cids[img_cid]["used"] = True
+            # if "width" in img_tag.attrs:
+            #     img_tag["width"] = cids[img_cid]["sz"][0]
+            #     changes.add(img_cid)
+            # if "height" in img_tag.attrs:
+            #     img_tag["height"] = cids[img_cid]["sz"][1]
+            #     changes.add(img_cid)
+            # style = img_tag.get("style", "")
+            # if style:
+            #     if "width:" in style:
+            #         style = re.sub(r"width:\s*\d+(px|%)", f"width: {cids[img_cid]['sz'][0]}px", style)
+            #         img_tag["style"] = style
+            #         changes.add(img_cid)
+            #     if "height:" in style:
+            #         style = re.sub(r"height:\s*\d+(px|%)", f"height: {cids[img_cid]['sz'][1]}px", style)
+            #         img_tag["style"] = style
+            #         changes.add(img_cid)
+            # current_width = img_tag.get("width", "auto")
+            # img_tag["style"] = f"max-width: 100%; width: {current_width}; height: auto;"
+            style_dic = {}
+            if "style" in img_tag.attrs:
+                styles = img_tag["style"].split(";")
+                for style in styles:
+                    if ":" in style:
+                        key, value = style.split(":", 1)
+                        style_dic[key.strip()] = value.strip()
+            style_dic["max-width"] = "100%"
+            style_dic["height"] = "auto"
+            current_width = style_dic.get("width", "auto")
+            if (
+                current_width != "auto"
+                and "px" in current_width
+                and int(current_width.replace("px", "")) > cids[img_cid]["sz"][0]
+            ):
+                style_dic["width"] = "auto"
+            else:
+                style_dic["width"] = current_width
+
+            img_tag["style"] = "; ".join(f"{k}: {v}" for k, v in style_dic.items())
+            changes.add(img_cid)
+        if changes:
+            html_part.set_content(soup.prettify(), subtype="html")
+            c_str = ", ".join(changes)
+            logger.info(f"{mail_id}: resized inline images cids '{c_str}' in html part")
+    for cid in cids:
+        if not cids[cid]["used"]:
+            logger.warning("{}: inline image '{}' not found".format(mail_id, cid))
+    return new_message
 
 
 def post_with_retries(url, auth, action, mail_id, json_data=None, files=None, retries=5, delay=20):
@@ -277,6 +387,8 @@ def send_to_ws(config, headers, main_file_path, attachments, mail_id):
         # 3) every attachment file
         files = []
         for attachment in attachments:
+            if attachment.get("is_inline"):
+                continue
             attachment_contents = attachment["content"]
             attachment_info = tarfile.TarInfo(
                 name="/attachments/{}".format(get_unique_name(attachment["filename"], files))
@@ -389,7 +501,6 @@ def process_mails():
                 filename = filename.replace(".eml", "_o.eml")
             logger.info("Writing {} file".format(filename))
             # o_attachments = parsed.attachments(False, set())
-            # attachments = modify_attachments(mail_id, o_attachments)
             save_as_eml(filename, message)
         except Exception as e:
             logger.error(e, exc_info=True)
@@ -408,7 +519,9 @@ def process_mails():
         logger.info(parsed.headers)
         pdf_path = get_preview_pdf_path(config, mail_id.encode("utf8"))
         logger.info("Generating {} file".format(pdf_path))
-        parsed.generate_pdf(pdf_path)
+        attachments = modify_attachments(mail_id, parsed.attachments)
+        message = resize_inline_images(mail_id, parsed.message, attachments)
+        parsed.generate_pdf(pdf_path, message=message)
         handler.disconnect()
         lock.close()
         sys.exit()
@@ -439,14 +552,18 @@ def process_mails():
             mail.__setitem__("X-Forwarded-For", "0.0.0.0")  # to be considered as main mail
         parser = Parser(mail, dev_mode, "")
         headers = parser.headers
-        o_attachments = parser.attachments
-        # [k: v for k, v in at.items() if k != 'content'} for at in o_attachments]
-        attachments = modify_attachments(mail_id, o_attachments)
-        main_file_path = get_preview_pdf_path(config, mail_id)
-        logger.info("pdf file {}".format(main_file_path))
+        # [{k: v for k, v in at.items() if k != 'content'} for at in parser.attachments]
+        attachments = modify_attachments(mail_id, parser.attachments)
+        # save_attachment(config["mailinfos"]["pdf-output-dir"], attachments[0])
         try:
-            parser.generate_pdf(main_file_path)
+            main_file_path = get_preview_pdf_path(config, mail_id)
+            logger.info("pdf file {}".format(main_file_path))
+            message = resize_inline_images(mail_id, parser.message, attachments)
+            parser.generate_pdf(main_file_path, message=message)
+            if dev_mode:
+                save_as_eml(main_file_path.replace(".pdf", ".eml"), message)
         except Exception:
+            logger.error("Error generating pdf file", exc_info=True)
             main_file_path = main_file_path.replace(".pdf", ".eml")
             save_as_eml(main_file_path, parser.message)
         send_to_ws(config, headers, main_file_path, attachments, mail_id)
@@ -506,11 +623,20 @@ def process_mails():
                     pass
                 continue
             # logger.info('Accepting {}: {}'.format(headers['Agent'][0][1], headers['Subject']))
-            o_attachments = parser.attachments
-            attachments = modify_attachments(mail_id, o_attachments)
             try:
-                parser.generate_pdf(main_file_path)
+                attachments = modify_attachments(mail_id, parser.attachments)
             except Exception:
+                logger.error("Error modifying attachments", exc_info=True)
+                attachments = parser.attachments
+            try:
+                message = resize_inline_images(mail_id, parser.message, attachments)
+            except Exception:
+                logger.error("Error resizing inline images", exc_info=True)
+                message = parser.message
+            try:
+                parser.generate_pdf(main_file_path, message=message)
+            except Exception:
+                logger.error("Error generating pdf file", exc_info=True)
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace(".pdf", ".eml")
                 save_as_eml(main_file_path, parser.message)

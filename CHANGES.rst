@@ -7,8 +7,20 @@ Changelog
 
 - Replaced `utils.safe_unicode` by `utils.safe_text`.
   [sgeulette]
+- Added `utils.save_attachment` function.
+  [sgeulette]
+- Improved `utils.get_reduced_size` to be more flexible.
+  [sgeulette]
+- Added notification for agent if exception occurs.
+  [cadam]
+- Changed options in `process_mails` to be more flexible.
+  [sgeulette]
+- Resized inline images in email body.
+  [sgeulette,cadam]
 - imio.email.parser improvements.
   [sgeulette]
+- Added `main.compress_pdf` function to compress pdf attachment.
+  [cadam]
 
 0.28.0 (2024-10-07)
 -------------------
