@@ -309,8 +309,28 @@ def resize_inline_images(mail_id, message, attachments):
             #         style = re.sub(r"height:\s*\d+(px|%)", f"height: {cids[img_cid]['sz'][1]}px", style)
             #         img_tag["style"] = style
             #         changes.add(img_cid)
-            current_width = img_tag.get("width", "auto")
-            img_tag["style"] = f"max-width: 100%; width: {current_width}; height: auto;"
+            # current_width = img_tag.get("width", "auto")
+            # img_tag["style"] = f"max-width: 100%; width: {current_width}; height: auto;"
+            style_dic = {}
+            if "style" in img_tag.attrs:
+                styles = img_tag["style"].split(";")
+                for style in styles:
+                    if ":" in style:
+                        key, value = style.split(":", 1)
+                        style_dic[key.strip()] = value.strip()
+            style_dic["max-width"] = "100%"
+            style_dic["height"] = "auto"
+            current_width = style_dic.get("width", "auto")
+            if (
+                current_width != "auto"
+                and "px" in current_width
+                and int(current_width.replace("px", "")) > cids[img_cid]["sz"][0]
+            ):
+                style_dic["width"] = "auto"
+            else:
+                style_dic["width"] = current_width
+
+            img_tag["style"] = "; ".join(f"{k}: {v}" for k, v in style_dic.items())
             changes.add(img_cid)
         if changes:
             html_part.set_content(soup.prettify(), subtype="html")
