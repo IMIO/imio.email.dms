@@ -240,14 +240,15 @@ def modify_attachments(mail_id, attachments, with_inline=True):
                     dic["modified"] = True
 
         if dic["type"] == "application/pdf":
-            compressed_pdf_content = compress_pdf(dic["content"])
-            new_pdf_len = len(compressed_pdf_content)
-            if new_pdf_len < dic["len"]:
-                dic["content"] = compressed_pdf_content
-                dic["len"] = new_pdf_len
+            new_content = compress_pdf(dic["content"])
+            new_len = len(new_content)
+            if new_len < dic["len"] and float(new_len / dic["len"]) < 0.9:
+                dic["content"] = new_content
+                dic["len"] = new_len
                 dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
+                dic["modified"] = True
                 if dev_mode:
-                    logger.info("{}: new pdf '{}' ({} => {})".format(mail_id, dic["filename"], dic["len"], new_pdf_len))
+                    logger.info("{}: new pdf '{}' ({} => {})".format(mail_id, dic["filename"], dic["len"], new_len))
 
         new_lst.append(dic)
     return new_lst
