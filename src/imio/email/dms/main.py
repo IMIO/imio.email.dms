@@ -758,7 +758,7 @@ Corresponding exception : {3}
     ERROR_MAIL_AGENT = """
 Cher utilisateur d'iA.Docs,
 
-Vous avez transféré un email vers iA.Docs ("sujet:{0}").
+Vous avez transféré un email vers iA.Docs (sujet: « {0} »).
 Malheureusement, une erreur est survenue lors du traitement de cet email et il n'a pas été intégré dans l'application.\n
 Nous avons été averti de l'erreur et allons y regarder.\n
 Il ne sert à rien d'envoyer à nouveau l'email.\n
@@ -769,7 +769,7 @@ Cordialement.\n
     UNSUPPORTED_ORIGIN_EMAIL = """
 Cher utilisateur d'iA.Docs,
 
-Le transfert de l'email attaché (sujet:"{0}") a été rejeté car il n'a pas été transféré correctement.\n
+Le transfert de l'email attaché (sujet: « {0} ») a été rejeté car il n'a pas été transféré correctement.\n
 Veuillez refaire le transfert du mail original en transférant "en tant que pièce jointe".\n
 Si vous utilisez Microsoft Outlook:\n
 - Dans le ruban, cliquez sur la flèche du ménu déroulant située sur le bouton de transfert\n
@@ -789,7 +789,7 @@ Cordialement.\n
 Bonjour,
 Votre adresse email {3} n'est pas autorisée à transférer un email vers iA.docs.
 Si cette action est justifiée, veuillez prendre contact avec votre référent interne.\n
-Le mail concerné est en pièce jointe (sujet:"{4}").\n
+Le mail concerné est en pièce jointe (sujet: « {4} »).\n
 Client ID : {0}
 IMAP login : {1}
 mail id : {2}
