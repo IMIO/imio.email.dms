@@ -21,6 +21,8 @@ Changelog
   [sgeulette]
 - Added `main.compress_pdf` function to compress pdf attachment.
   [cadam]
+- Added pdbp in buildout and env var to use breakpoint() alone.
+  [sgeulette]
 
 0.28.0 (2024-10-07)
 -------------------
