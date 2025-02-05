@@ -48,6 +48,6 @@ COPY --from=builder --chown=imio /home/imio .
 COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
 COPY --chown=imio --chmod=500 entrypoint.sh /home/imio/entrypoint.sh
 
-USER imio
+# USER imio
 
 ENTRYPOINT ["/home/imio/entrypoint.sh"]
