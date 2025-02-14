@@ -19,7 +19,7 @@ jobs:
           IMAGE_TAG: ${{ vars.IMAGE_TAG_STAGING }}
           NEW_IMAGE_TAGS: |
             ${{ vars.IMAGE_TAG_PRODUCTION }}
-            ${{ vars.IMAGE_TAG_PRODUCTION }}-${{ github.event.release.tag_name }}
+            ${{ github.ref_name }}
           REGISTRY_URL: ${{ secrets.HARBOR_URL }}
           REGISTRY_USERNAME: ${{ secrets.DOCS_HARBOR_USERNAME }}
           REGISTRY_PASSWORD: ${{ secrets.DOCS_HARBOR_PASSWORD }}
