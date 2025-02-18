@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.28.1 (unreleased)
+0.29.0 (2025-02-18)
 -------------------
 
 - Replaced `utils.safe_unicode` by `utils.safe_text`.
