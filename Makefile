@@ -21,6 +21,14 @@ docker-image:
 lint:
 	pre-commit run --all
 
+.PHONY: vcr
+vcr:  ## Shows requirements in checkversion-r.html
+	bin/versioncheck -rbo checkversion-r.html
+
+.PHONY: vcn
+vcn:  ## Shows newer packages in checkversion-n.html
+	bin/versioncheck -npbo checkversion-n.html
+
 .PHONY: cleanall
 cleanall:  ## Cleans all installed buildout files
 	rm -fr bin include lib local share develop-eggs downloads eggs parts .installed.cfg .plone.versioncheck.tracked.json .mr.developer.cfg

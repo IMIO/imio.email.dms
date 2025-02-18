@@ -23,6 +23,8 @@ Changelog
   [cadam]
 - Added pdbp in buildout and env var to use breakpoint() alone.
   [sgeulette]
+- Pinned versions. Added dependency. Corrected source.
+  [sgeulette]
 
 0.28.0 (2024-10-07)
 -------------------
