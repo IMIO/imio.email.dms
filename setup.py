@@ -13,7 +13,6 @@ long_description = "\n\n".join(
     ]
 )
 
-
 setup(
     name="imio.email.dms",
     version="0.28.1.dev0",
@@ -25,9 +24,11 @@ setup(
         "Environment :: Console",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
     ],
+    python_requires=">=3.10, <3.11",
     keywords="Python",
     author="Laurent Lasudry",
     author_email="info@affinitic.be",
