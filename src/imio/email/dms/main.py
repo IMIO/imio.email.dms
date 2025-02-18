@@ -294,24 +294,6 @@ def resize_inline_images(mail_id, message, attachments):
             if not img_cid or img_cid not in cids:
                 continue
             cids[img_cid]["used"] = True
-            # if "width" in img_tag.attrs:
-            #     img_tag["width"] = cids[img_cid]["sz"][0]
-            #     changes.add(img_cid)
-            # if "height" in img_tag.attrs:
-            #     img_tag["height"] = cids[img_cid]["sz"][1]
-            #     changes.add(img_cid)
-            # style = img_tag.get("style", "")
-            # if style:
-            #     if "width:" in style:
-            #         style = re.sub(r"width:\s*\d+(px|%)", f"width: {cids[img_cid]['sz'][0]}px", style)
-            #         img_tag["style"] = style
-            #         changes.add(img_cid)
-            #     if "height:" in style:
-            #         style = re.sub(r"height:\s*\d+(px|%)", f"height: {cids[img_cid]['sz'][1]}px", style)
-            #         img_tag["style"] = style
-            #         changes.add(img_cid)
-            # current_width = img_tag.get("width", "auto")
-            # img_tag["style"] = f"max-width: 100%; width: {current_width}; height: auto;"
             style_dic = {}
             if "style" in img_tag.attrs:
                 styles = img_tag["style"].split(";")
