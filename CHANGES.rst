@@ -4,8 +4,8 @@ Changelog
 0.29.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- imio.email.parser: improved `parser.correct_addresses`.
+  [sgeulette]
 
 0.29.0 (2025-02-18)
 -------------------
