@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.29.1 (unreleased)
+0.29.1 (2025-02-27)
 -------------------
 
 - imio.email.parser: improved `parser.correct_addresses`.
