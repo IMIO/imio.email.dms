@@ -51,7 +51,7 @@ setup(
         "six",
         "configparser",
     ],
-    extras_require={},
+    extras_require={"test": ("parameterized",)},
     entry_points="""
     [console_scripts]
     process_mails = imio.email.dms.main:process_mails
