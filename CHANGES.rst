@@ -4,8 +4,8 @@ Changelog
 0.29.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- Improved test coverage.
+  [cadam]
 
 0.29.1 (2025-02-27)
 -------------------
