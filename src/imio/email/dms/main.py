@@ -37,10 +37,12 @@ from imio.email.dms.utils import get_reduced_size
 from imio.email.dms.utils import get_unique_name
 from imio.email.dms.utils import safe_text
 from imio.email.dms.utils import save_as_eml
+from imio.email.dms.utils import save_attachment  # noqa
 from imio.email.dms.utils import set_next_id
 from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser  # noqa
 from imio.email.parser.utils import stop  # noqa
+from imio.email.parser.utils import structure  # noqa
 from imio.pyutils.system import runCommand
 from io import BytesIO
 from PIL import Image

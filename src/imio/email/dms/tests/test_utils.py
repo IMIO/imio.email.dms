@@ -57,18 +57,18 @@ class TestUtils(unittest.TestCase):
 
     def test_next_id(self):
         config = configparser.ConfigParser()
-        config.read("../../config.ini.dev")
+        config.read("../../config.ini")
 
         devinfos = {"nid": None}
         with patch("imio.email.dms.utils.dev_mode", True):
             set_next_id(config, 0)
-            self.assertTupleEqual((1, "01Z9996"), get_next_id(config, devinfos))
-            self.assertTupleEqual((2, "01Z9996"), get_next_id(config, devinfos))
-            self.assertTupleEqual((3, "01Z9996"), get_next_id(config, devinfos))
+            self.assertTupleEqual((1, "01Z9999"), get_next_id(config, devinfos))
+            self.assertTupleEqual((2, "01Z9999"), get_next_id(config, devinfos))
+            self.assertTupleEqual((3, "01Z9999"), get_next_id(config, devinfos))
 
         devinfos = {"nid": None}
         with patch("imio.email.dms.utils.dev_mode", False):
             set_next_id(config, 0)
-            self.assertTupleEqual((1, "01Z9996"), get_next_id(config, devinfos))
-            self.assertTupleEqual((1, "01Z9996"), get_next_id(config, devinfos))
-            self.assertTupleEqual((1, "01Z9996"), get_next_id(config, devinfos))
+            self.assertTupleEqual((1, "01Z9999"), get_next_id(config, devinfos))
+            self.assertTupleEqual((1, "01Z9999"), get_next_id(config, devinfos))
+            self.assertTupleEqual((1, "01Z9999"), get_next_id(config, devinfos))

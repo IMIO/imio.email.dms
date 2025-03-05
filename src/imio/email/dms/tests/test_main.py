@@ -9,21 +9,21 @@ from imio.email.dms.main import process_mails
 from imio.email.dms.main import resize_inline_images
 from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser
+from imio.email.parser.tests import test_parser
 from imio.email.parser.tests.test_parser import get_eml_message
 from pathlib import Path
 from unittest.mock import patch
 
 import configparser
 import email
-import ipdb
 import os
 import PyPDF2
 import tarfile
 import unittest
 
 
-TEST_FILES_PATH = "../../src/imio/email/dms/tests/files"
-EML_TEST_FILES_PATH = "../../devel/imio.email.parser/src/imio/email/parser/tests/files"
+TEST_FILES_PATH = os.path.join(os.path.dirname(__file__), "files")
+EML_TEST_FILES_PATH = os.path.join(os.path.dirname(test_parser.__file__), "files")
 
 
 class TestMain(unittest.TestCase):
@@ -174,24 +174,25 @@ class TestMain(unittest.TestCase):
         for dic in to_test:
             filename = dic["filename"]
             expected_exit_code = dic["expected_exit_code"]
-            with patch("sys.argv", ["main.py", "../../config.ini.dev", f"--test_eml={EML_TEST_FILES_PATH}/{filename}"]):
-                with self.assertRaises(SystemExit) as cm:
-                    process_mails()
+            with patch("sys.argv", ["main.py", "../../config.ini", f"--test_eml={EML_TEST_FILES_PATH}/{filename}"]):
+                with patch("imio.email.dms.main.IMAPEmailHandler"):
+                    with self.assertRaises(SystemExit) as cm:
+                        process_mails()
             self.assertEqual(cm.exception.code, expected_exit_code)
 
     @patch("imio.email.dms.main.dev_mode", True)
     def test_process_mails_get_eml(self):
-        with patch("sys.argv", ["main.py", "../../config.ini.dev", "--get_eml=01"]):
+        with patch("sys.argv", ["main.py", "../../config.ini", "--get_eml=01"]):
             with patch("imio.email.dms.main.IMAPEmailHandler") as MockIMAPEmailHandler:
                 with self.assertRaises(SystemExit) as cm:
                     mock_handler = MockIMAPEmailHandler.return_value
                     mock_handler.get_mail.return_value = get_eml_message("01_email_with_inline_and_annexes.eml")
                     process_mails()
-        self.assertEqual(cm.exception.code, None)
+        self.assertIsNone(cm.exception.code)
 
         with (
             open(os.path.join(EML_TEST_FILES_PATH, "01_email_with_inline_and_annexes.eml"), "r") as original_file,
-            open("staging-docs_01.eml", "r") as output_file,
+            open("01.eml", "r") as output_file,
         ):
             # ipdb.set_trace()
             original_mail = Parser(
@@ -211,18 +212,19 @@ class TestMain(unittest.TestCase):
 
     @patch("imio.email.dms.main.dev_mode", True)
     def test_process_mails_gen_pdf(self):
-        with patch("sys.argv", ["main.py", "../../config.ini.dev", "--gen_pdf=01"]):
+        with patch("sys.argv", ["main.py", "../../config.ini", "--gen_pdf=01"]):
             with patch("imio.email.dms.main.IMAPEmailHandler") as MockIMAPEmailHandler:
                 with self.assertRaises(SystemExit) as cm:
                     mock_handler = MockIMAPEmailHandler.return_value
                     mock_handler.get_mail.return_value = get_eml_message("01_email_with_inline_and_annexes.eml")
                     process_mails()
-        self.assertEqual(cm.exception.code, None)
+        self.assertIsNone(cm.exception.code)
         self.assertTrue(Path("/tmp/01.pdf").exists())
 
     @patch("imio.email.dms.main.dev_mode", True)
+    @patch("imio.email.dms.utils.dev_mode", True)
     def test_process_mails_no_option(self):
-        with patch("sys.argv", ["main.py", "../../config.ini.dev"]):
+        with patch("sys.argv", ["main.py", "../../config.ini"]):
             with patch("imio.email.dms.main.IMAPEmailHandler") as MockIMAPEmailHandler:
                 with self.assertRaises(SystemExit) as cm:
                     mock_handler = MockIMAPEmailHandler.return_value
@@ -234,10 +236,10 @@ class TestMain(unittest.TestCase):
                     ]
                     process_mails()
 
-        self.assertEqual(cm.exception.code, None)
+        self.assertIsNone(cm.exception.code)
 
-        self.assertTrue(Path("/tmp/01Z999600000001.tar").exists())
-        with tarfile.open("/tmp/01Z999600000001.tar", "r") as f:
+        self.assertTrue(Path("/tmp/01Z999900000001.tar").exists())
+        with tarfile.open("/tmp/01Z999900000001.tar", "r") as f:
             self.assertEqual(len(f.getnames()), 4)
             self.assertEqual(
                 f.getnames(),
@@ -249,8 +251,8 @@ class TestMain(unittest.TestCase):
                 ],
             )
 
-        self.assertTrue(Path("/tmp/01Z999600000002.tar").exists())
-        with tarfile.open("/tmp/01Z999600000002.tar", "r") as f:
+        self.assertTrue(Path("/tmp/01Z999900000002.tar").exists())
+        with tarfile.open("/tmp/01Z999900000002.tar", "r") as f:
             self.assertEqual(len(f.getnames()), 4)
             self.assertEqual(
                 f.getnames(),
@@ -262,8 +264,8 @@ class TestMain(unittest.TestCase):
                 ],
             )
 
-        self.assertTrue(Path("/tmp/01Z999600000003.tar").exists())
-        with tarfile.open("/tmp/01Z999600000003.tar", "r") as f:
+        self.assertTrue(Path("/tmp/01Z999900000003.tar").exists())
+        with tarfile.open("/tmp/01Z999900000003.tar", "r") as f:
             self.assertEqual(len(f.getnames()), 4)
             self.assertEqual(
                 f.getnames(),
@@ -289,7 +291,7 @@ class TestMain(unittest.TestCase):
             "04": get_eml_message("04_email_with_pdf_attachment.eml"),
         }
         with (
-            patch("sys.argv", ["main.py", "../../config.ini.dev", "--list_only"]),
+            patch("sys.argv", ["main.py", "../../config.ini", "--list_only"]),
             patch("imio.email.dms.main.IMAPEmailHandler") as MockIMAPEmailHandler,
             self.assertRaises(SystemExit) as cm,
         ):
@@ -310,7 +312,7 @@ class TestMain(unittest.TestCase):
         msg = get_eml_message("01_email_with_inline_and_annexes.eml")
         parser = Parser(msg, False, "01")
         config = configparser.ConfigParser()
-        config.read("../../config.ini.dev")
+        config.read("../../config.ini")
         try:
             raise Exception("Test exception")
         except Exception as e:
@@ -355,16 +357,16 @@ class TestMain(unittest.TestCase):
         msg = get_eml_message("01_email_with_inline_and_annexes.eml")
         parser = Parser(msg, False, "01")
         config = configparser.ConfigParser()
-        config.read("../../config.ini.dev")
+        config.read("../../config.ini")
         Notify(parser.message, config, parser.headers).unsupported_origin()
 
     @patch("imio.email.dms.main.Notify._send")
     def test_notify_ignored(self, notify_send):
         def assert_msg(msg):
-            self.assertEqual(msg["Subject"], "Transfert non autorisé de stephan.mio@mail.be pour le client 019996")
+            self.assertEqual(msg["Subject"], "Transfert non autorisé de stephan.mio@mail.be pour le client 019999")
             self.assertEqual(msg["From"], "imio.email.dms@imio.be")
             self.assertEqual(msg["To"], "stephan.mio@mail.be")
-            self.assertEqual(msg["Bcc"], "chris.adam@imio.be")
+            self.assertEqual(msg["Bcc"], "support-docs@imio.be")
             # self.assertEqual(msg["Bcc"], "support-docs@imio.be")
             self.assertEqual(msg.get_payload(1).get_content_type(), "message/rfc822")
             self.assertEqual(msg.get_payload(1)["Content-Disposition"], "inline")
@@ -374,15 +376,15 @@ class TestMain(unittest.TestCase):
         msg = get_eml_message("01_email_with_inline_and_annexes.eml")
         parser = Parser(msg, False, "01")
         config = configparser.ConfigParser()
-        config.read("../../config.ini.dev")
+        config.read("../../config.ini")
         Notify(parser.message, config, parser.headers).ignored("01")
 
     @patch("imio.email.dms.main.Notify._send")
     def test_notify_result(self, notify_send):
         def assert_msg(msg):
-            self.assertEqual(msg["Subject"], "Result of clean_mails for client 019996")
+            self.assertEqual(msg["Subject"], "Result of clean_mails for client 019999")
             self.assertEqual(msg["From"], "imio.email.dms@imio.be")
-            self.assertEqual(msg["To"], "chris.adam@imio.be")
+            self.assertEqual(msg["To"], "support-docs@imio.be")
             self.assertIn("Some message", msg.get_payload(0).get_payload())
 
         notify_send.side_effect = assert_msg
@@ -390,5 +392,5 @@ class TestMain(unittest.TestCase):
         msg = get_eml_message("01_email_with_inline_and_annexes.eml")
         parser = Parser(msg, False, "01")
         config = configparser.ConfigParser()
-        config.read("../../config.ini.dev")
+        config.read("../../config.ini")
         Notify(parser.message, config, parser.headers).result("Result of clean_mails", "Some message")
