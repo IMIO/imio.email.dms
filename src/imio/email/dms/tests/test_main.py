@@ -319,15 +319,14 @@ class TestMain(unittest.TestCase):
             Notify(parser.message, config, parser.headers).exception("01", e)
 
         # Assert msg to support
-        with open("/tmp/Error handling an email for client 019996.eml", "r") as f:
+        with open("/tmp/Error handling an email for client 019999.eml", "r") as f:
             msg = email.message_from_file(f)
-        self.assertEqual(msg["Subject"], "Error handling an email for client 019996")
+        self.assertEqual(msg["Subject"], "Error handling an email for client 019999")
         self.assertEqual(msg["From"], "imio.email.dms@imio.be")
-        self.assertEqual(msg["To"], "chris.adam@imio.be")
-        # self.assertEqual(msg["To"], "support-docs@imio.be")
+        self.assertEqual(msg["To"], "support-docs@imio.be")
         self.assertEqual(
             msg.get_payload(0).get_payload(),
-            "\nProblematic mail is attached.\n\nClient ID : 019996\nIMAP login : staging-docs\n\nmail id : 01\n\nCorresponding exception : <class 'Exception'>\nTest exception\n\n\n\n",
+            "\nProblematic mail is attached.\n\nClient ID : 019999\nIMAP login : \n\nmail id : 01\n\nCorresponding exception : <class 'Exception'>\nTest exception\n\n\n\n",
         )
         self.assertEqual(msg.get_payload(1).get_content_type(), "message/rfc822")
         self.assertEqual(msg.get_payload(1)["Content-Disposition"], "inline")
