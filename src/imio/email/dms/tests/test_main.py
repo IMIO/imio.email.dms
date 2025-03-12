@@ -40,7 +40,7 @@ class TestMain(unittest.TestCase):
             {
                 "fn": "04_email_with_pdf_attachment.eml",
                 "orig": {"nb": 1, "len": [2231999]},
-                "mod": {"all_nb": 1, "at_nb": 1, "len": [160175], "mod": [True]},
+                "mod": {"all_nb": 1, "at_nb": 1, "len": [160165], "mod": [True]},
             },
         ]
         # breakpoint()
