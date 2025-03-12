@@ -6,7 +6,7 @@ Changelog
 
 - Improved test coverage.
   [cadam]
-- Descreased pdf attachment compression to improve quality.
+- Decreased pdf attachment compression to improve quality.
   [cadam]
 
 0.29.1 (2025-02-27)
