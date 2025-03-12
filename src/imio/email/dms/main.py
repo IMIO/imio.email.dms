@@ -133,9 +133,13 @@ def compress_pdf(original_pdf_content):
             output_temp_file_name = output_temp_file.name
 
         # Ghostscript command
-        # -dPDFSETTINGS=/ebook : Medium resolution (good for reading)
+        # -dPDFSETTINGS=/screen selects low-resolution output similar to the Acrobat Distiller "Screen Optimized" setting.
+        # -dPDFSETTINGS=/ebook selects medium-resolution output similar to the Acrobat Distiller "eBook" setting.
+        # -dPDFSETTINGS=/printer selects output similar to the Acrobat Distiller "Print Optimized" setting.
+        # -dPDFSETTINGS=/prepress selects output similar to Acrobat Distiller "Prepress Optimized" setting.
+        # -dPDFSETTINGS=/default selects output intended to be useful across a wide variety of uses, possibly at the expense of a larger output file.
         gs_command = (
-            f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH "
+            f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH "
             f"-sOutputFile={output_temp_file_name} {input_temp_file_name}"
         )
         _, stderr, returncode = runCommand(gs_command)
