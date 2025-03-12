@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.29.2 (unreleased)
+0.29.2 (2025-03-12)
 -------------------
 
 - Improved test coverage.
