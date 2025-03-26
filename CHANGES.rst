@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.29.3 (unreleased)
+0.29.3 (2025-03-26)
 -------------------
 
 - imio.email.parser: Fixed attachment filename parsing.
