@@ -4,8 +4,8 @@ Changelog
 0.29.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- imio.email.parser: Fixed attachment filename parsing.
+  [cadam]
 
 0.29.2 (2025-03-12)
 -------------------
