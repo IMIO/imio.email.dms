@@ -1,10 +1,10 @@
 Changelog
 =========
 
-0.29.4 (unreleased)
+0.29.4 (2025-05-16)
 -------------------
 
-- imio.email.parser:Fixed base64-encoded rfc822 attachment not decoded.
+- imio.email.parser: Fixed base64-encoded rfc822 attachment not decoded.
   [chris-adam]
 
 0.29.3 (2025-03-26)
