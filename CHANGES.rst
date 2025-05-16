@@ -4,22 +4,22 @@ Changelog
 0.29.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- imio.email.parser:Fixed base64-encoded rfc822 attachment not decoded.
+  [chris-adam]
 
 0.29.3 (2025-03-26)
 -------------------
 
 - imio.email.parser: Fixed attachment filename parsing.
-  [cadam]
+  [chris-adam]
 
 0.29.2 (2025-03-12)
 -------------------
 
 - Improved test coverage.
-  [cadam]
+  [chris-adam]
 - Decreased pdf attachment compression to improve quality.
-  [cadam]
+  [chris-adam]
 
 0.29.1 (2025-02-27)
 -------------------
@@ -37,15 +37,15 @@ Changelog
 - Improved `utils.get_reduced_size` to be more flexible.
   [sgeulette]
 - Added notification for agent if exception occurs.
-  [cadam]
+  [chris-adam]
 - Changed options in `process_mails` to be more flexible.
   [sgeulette]
 - Resized inline images in email body.
-  [sgeulette,cadam]
+  [sgeulette,chris-adam]
 - imio.email.parser improvements.
   [sgeulette]
 - Added `main.compress_pdf` function to compress pdf attachment.
-  [cadam]
+  [chris-adam]
 - Added pdbp in buildout and env var to use breakpoint() alone.
   [sgeulette]
 - Pinned versions. Added dependency. Corrected source.
