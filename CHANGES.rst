@@ -4,8 +4,8 @@ Changelog
 0.29.5 (unreleased)
 -------------------
 
-- Nothing changed yet.
-
+- imio.email.parser: Corrected date following timezone.
+  [chris-adam]
 
 0.29.4 (2025-05-16)
 -------------------
