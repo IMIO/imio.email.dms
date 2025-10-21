@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.29.5 (unreleased)
+0.29.5 (2025-10-21)
 -------------------
 
 - imio.email.parser: Corrected date following timezone.
