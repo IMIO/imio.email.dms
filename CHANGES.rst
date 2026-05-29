@@ -4,7 +4,10 @@ Changelog
 0.29.6 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- email2pdf2: Ignored all wkhtmltopdf `libpng warning: iCCP:` errors.
+  [chris-adam]
+- email2pdf2: Handled `TimeoutError` and increased external image fetch timeout to 15s.
+  [chris-adam]
 
 
 0.29.5 (2025-10-21)
