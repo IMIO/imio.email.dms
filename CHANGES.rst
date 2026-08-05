@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.29.6 (unreleased)
+0.29.6 (2026-08-05)
 -------------------
 
 - email2pdf2: Ignored all wkhtmltopdf `libpng warning: iCCP:` errors.
