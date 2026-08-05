@@ -8,6 +8,8 @@ Changelog
   [chris-adam]
 - email2pdf2: Handled `TimeoutError` and increased external image fetch timeout to 15s.
   [chris-adam]
+- imio.email.parser: Added TNEF (Outlook rich text) support.
+  [chris-adam]
 
 
 0.29.5 (2025-10-21)

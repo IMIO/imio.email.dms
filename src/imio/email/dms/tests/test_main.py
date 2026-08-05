@@ -166,6 +166,11 @@ class TestMain(unittest.TestCase):
                 "expected_exit_code": None,
             },
             {
+                "filename": "07_email_with_tnef_winmail.eml",
+                "expected_exit_code": None,
+                "extra_args": ["--eml_orig"],
+            },
+            {
                 "filename": "eml_file_that_does_not_exist.eml",
                 "expected_exit_code": 0,
             },
@@ -174,7 +179,9 @@ class TestMain(unittest.TestCase):
         for dic in to_test:
             filename = dic["filename"]
             expected_exit_code = dic["expected_exit_code"]
-            with patch("sys.argv", ["main.py", "../../config.ini", f"--test_eml={EML_TEST_FILES_PATH}/{filename}"]):
+            argv = ["main.py", "../../config.ini", f"--test_eml={EML_TEST_FILES_PATH}/{filename}"]
+            argv += dic.get("extra_args", [])
+            with patch("sys.argv", argv):
                 with patch("imio.email.dms.main.IMAPEmailHandler"):
                     with self.assertRaises(SystemExit) as cm:
                         process_mails()
