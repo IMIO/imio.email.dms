@@ -4,7 +4,8 @@ Changelog
 0.29.7 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added timestamps to logger, set "Treated no email." to debug log level (DMS-1203).
+  [chris-adam]
 
 
 0.29.6 (2026-08-05)

@@ -650,7 +650,7 @@ def process_mails():
             )
         )
     else:
-        logger.info("Treated no email.")
+        logger.debug("Treated no email.")
     handler.disconnect()
     lock.close()
     sys.exit()
