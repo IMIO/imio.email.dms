@@ -11,6 +11,13 @@ Changelog
   [chris-adam]
 - Moved to Python 3.12 and the Ubuntu 24.04 base image, upgraded zc.buildout to 5.2.0.
   [chris-adam]
+- Converted heic/heif image attachments to jpeg: added `pillow-heif` (DMS-1212).
+  [chris-adam]
+- imio.email.parser: Fixed `Date` header emptied when writing an eml: the formatted date is
+  now only set on the copy used to generate the pdf.
+  [chris-adam]
+- imio.email.parser: Replaced `pytz` by stdlib `zoneinfo` in tests.
+  [chris-adam]
 
 
 0.29.6 (2026-08-05)
