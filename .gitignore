@@ -1,5 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
-config.ini.*
+*.ini
+*.ini.*
+!config.ini
 ### Plone template
 *.pyc
 *.pyo
@@ -145,3 +147,6 @@ buildout.cfg
 # Lock file
 lock
 lock_*
+
+# Test fixtures (*.eml and *.pdf are ignored above)
+!src/imio/email/dms/tests/files/*

@@ -11,12 +11,16 @@ from imio.email.parser import email_policy  # noqa
 from imio.email.parser.parser import Parser
 from imio.email.parser.tests import test_parser
 from imio.email.parser.tests.test_parser import get_eml_message
+from io import BytesIO
 from pathlib import Path
+from PIL import Image
 from unittest.mock import patch
 
 import configparser
+import copy
 import email
 import os
+import pillow_heif
 import PyPDF2
 import tarfile
 import unittest
@@ -56,6 +60,92 @@ class TestMain(unittest.TestCase):
             self.assertListEqual([at.get("modified") for at in mod_attach], dic["mod"]["mod"])
             mod_attach = modify_attachments(name, parser.attachments, with_inline=False)
             self.assertEqual(len(mod_attach), dic["mod"]["at_nb"])
+
+    def test_modify_attachments_heic(self):
+        """heic/heif is converted to jpeg"""
+        name = "email_with_heic_attachment.eml"
+        eml = get_eml_message(os.path.join(TEST_FILES_PATH, name), test_dir=False)
+        attachments = Parser(eml, False, name).attachments
+        self.assertListEqual(
+            [(at["filename"], at["type"], at["len"]) for at in attachments],
+            [("1000044392.heic", "image/heif", 297969)],
+        )
+        # heic is sometimes announced as application/octet-stream: the extension must be enough
+        octet_attachments = copy.deepcopy(attachments)
+        octet_attachments[0]["type"] = "application/octet-stream"
+
+        for attachs in (attachments, octet_attachments):
+            mod_attach = modify_attachments(name, attachs)
+            self.assertEqual(len(mod_attach), 1)
+            at = mod_attach[0]
+            self.assertEqual(at["filename"], "1000044392-(redimensionné).jpeg")
+            self.assertEqual(at["type"], "image/jpeg")
+            self.assertTrue(at["modified"])
+            # converted and reduced to fit in img_size_limit
+            self.assertTupleEqual(at["size"], (651, 1024))
+            self.assertLess(at["len"], 297969)
+            new_img = Image.open(BytesIO(at["content"]))
+            self.assertEqual(new_img.format, "JPEG")
+            self.assertTupleEqual(new_img.size, (651, 1024))
+            # exif of the original image is kept
+            exif = new_img.getexif()
+            self.assertEqual(exif.get(0x010F), "samsung")
+            self.assertEqual(exif.get(0x0132), "2026:06:07 13:21:30")
+
+    def test_modify_attachments_heic_alpha(self):
+        """A heif with an alpha channel is converted to png, jpeg cannot store transparency"""
+        img = Image.new("RGBA", (120, 80), (200, 30, 30, 0))
+        img.paste((0, 255, 0, 255), (40, 20, 80, 60))  # an opaque square on a transparent ground
+        heif = BytesIO()
+        pillow_heif.from_pillow(img).save(heif, format="HEIF", quality=60)
+        content = heif.getvalue()
+        attachment = {
+            "filename": "transparent.heic",
+            "content": content,
+            "len": len(content),
+            "disp": "attachment",
+            "type": "image/heif",
+            "cid": "",
+        }
+
+        at = modify_attachments("alpha", [attachment])[0]
+        self.assertEqual(at["filename"], "transparent.png")
+        self.assertEqual(at["type"], "image/png")
+        self.assertTrue(at["modified"])
+        new_img = Image.open(BytesIO(at["content"]))
+        self.assertEqual(new_img.format, "PNG")
+        self.assertEqual(new_img.mode, "RGBA")
+        # transparency is kept: heif is lossy, only the alpha channel is checked
+        self.assertEqual(new_img.getpixel((0, 0))[3], 0)
+        self.assertEqual(new_img.getpixel((60, 40))[3], 255)
+
+    def test_resize_inline_images_heic(self):
+        """A converted inline image must not keep the heic content type in the message (DMS-1212)"""
+        name = "email_with_heic_attachment.eml"
+        with open(os.path.join(TEST_FILES_PATH, name)) as fp:
+            content = fp.read()
+        # make the heic part inline and reference it in the html body
+        content = content.replace(
+            'Content-Disposition: attachment; filename="1000044392.heic"',
+            'Content-Disposition: inline; filename="1000044392.heic"',
+        )
+        content = content.replace(
+            "</div>\n", '<div><img src="cid:f_mtvn9ky11" style="width: 200px"></div></div>\n', 1
+        )
+        parser = Parser(email.message_from_string(content, policy=email_policy), False, name)
+        self.assertListEqual([(at["type"], at["disp"]) for at in parser.attachments], [("image/heif", "inline")])
+
+        attachments = modify_attachments(name, parser.attachments)
+        self.assertEqual(attachments[0]["filename"], "1000044392.jpeg")
+        self.assertEqual(attachments[0]["type"], "image/jpeg")
+        new_message = resize_inline_images(name, parser.message, attachments)
+        image_parts = [part for part in new_message.walk() if part.get_content_maintype() == "image"]
+        self.assertEqual(len(image_parts), 1)
+        self.assertEqual(image_parts[0].get_content_type(), "image/jpeg")
+        self.assertEqual(image_parts[0].get_payload(decode=True), attachments[0]["content"])
+        # the image is not resized (764px wide, below the inline limit): the width is kept
+        html = [part for part in new_message.walk() if part.get_content_type() == "text/html"][0]
+        self.assertIn("width: 200px", html.get_content())
 
     def test_compress_pdf(self):
         pdf_file = os.path.join(TEST_FILES_PATH, "pdf-example-bookmarks-1-2.pdf")
