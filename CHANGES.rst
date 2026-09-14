@@ -6,6 +6,15 @@ Changelog
 
 - Added timestamps to logger, set "Treated no email." to debug log level (DMS-1203).
   [chris-adam]
+- Converted heic/heif image attachments to jpeg: added `pillow-heif` and updated Pillow to 8.4.0 (DMS-1212).
+  [chris-adam]
+- Restored exif information of resized images.
+  [chris-adam]
+- imio.email.parser: Fixed `Date` header emptied when writing an eml: the formatted date is
+  now only set on the copy used to generate the pdf.
+  [chris-adam]
+- imio.email.parser: Replaced `pytz` by stdlib `zoneinfo` in tests.
+  [chris-adam]
 
 
 0.29.6 (2026-08-05)

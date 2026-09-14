@@ -49,6 +49,7 @@ from PIL import Image
 from PIL import ImageFile
 from PIL import ImageOps
 from PIL import UnidentifiedImageError
+from pillow_heif import register_heif_opener
 from smtplib import SMTP
 from time import sleep
 from xml.etree.ElementTree import ParseError
@@ -80,6 +81,8 @@ img_size_limit = 1024
 Image.MAX_IMAGE_PIXELS = None
 # OSError: broken data stream when reading image file
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+register_heif_opener()
+HEIF_PATTERN = re.compile(r"\.hei[cf]$", re.I)
 EXIF_ORIENTATION = 0x0112
 MAX_SIZE_ATTACH = 19000000
 
@@ -170,6 +173,9 @@ def modify_attachments(mail_id, attachments, with_inline=True):
     new_lst = []
     for dic in attachments:
         # {k: v for k, v in dic.items() if k != 'content'}
+        # heic is sometimes announced as application/octet-stream: we rely on the extension
+        if HEIF_PATTERN.search(dic["filename"]):
+            dic["type"] = "image/heic"
         is_inline = False
         # we pass inline image, often used in signature. This image will be in generated pdf
         if dic["type"].startswith("image/") and dic["disp"] == "inline":
@@ -190,6 +196,11 @@ def modify_attachments(mail_id, attachments, with_inline=True):
             except Image.DecompressionBombError:  # never append because Image.MAX_IMAGE_PIXELS is set to None
                 continue
             dic["is_inline"] = is_inline
+            format_mod = img.format == "HEIF"
+            out_format = img.format
+            if format_mod:
+                # PNG if alpha channel, else JPEG
+                out_format = "A" in img.mode and "PNG" or "JPEG"
             try:
                 exif = img.getexif()
                 orient = exif.get(EXIF_ORIENTATION, 0)
@@ -218,21 +229,27 @@ def modify_attachments(mail_id, attachments, with_inline=True):
                     logger.info("{}: resized image '{}'".format(mail_id, dic["filename"]))
                 # see https://pillow.readthedocs.io/en/stable/handbook/concepts.html#filters
                 new_img = new_img.resize(new_size, Image.BICUBIC)
-                dic["size"] = new_size
                 size_mod = True
 
-            if size_mod or orient_mod:
+            if size_mod or orient_mod or format_mod:
                 new_bytes = BytesIO()
+                # exif is taken from new_img: exif_transpose has removed the orientation tag from it
+                new_exif = new_img.info.get("exif", b"")
                 # save the image in new_bytes
                 try:
-                    new_img.save(new_bytes, format=img.format, optimize=True, quality=75)
+                    new_img.save(new_bytes, format=out_format, optimize=True, quality=75, exif=new_exif)
                 except ValueError:
-                    new_img.save(new_bytes, format=img.format, optimize=True)
+                    new_img.save(new_bytes, format=out_format, optimize=True, exif=new_exif)
                 new_content = new_bytes.getvalue()
                 new_len = len(new_content)
-                if orient_mod or (new_len < dic["len"] and float(new_len / dic["len"]) < 0.9):
-                    #                                      more than 10% of difference
-                    dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
+                # a converted image is always kept, even if bigger: the original format is unusable
+                if format_mod or orient_mod or (new_len < dic["len"] and float(new_len / dic["len"]) < 0.9):
+                    #                                                    more than 10% of difference
+                    if format_mod:
+                        dic["type"] = "image/{}".format(out_format.lower())
+                        dic["filename"] = re.sub(r"\.\w+$", ".{}".format(out_format.lower()), dic["filename"])
+                    if size_mod or orient_mod:
+                        dic["filename"] = re.sub(r"(\.\w+)$", r"-(redimensionné)\1", dic["filename"])
                     if dev_mode:
                         logger.info(
                             "{}: new image '{}' ({} => {}){}".format(
@@ -241,6 +258,7 @@ def modify_attachments(mail_id, attachments, with_inline=True):
                         )
                     dic["len"] = new_len
                     dic["content"] = new_content
+                    dic["size"] = new_img.size
                     dic["modified"] = True
 
         if dic["type"] == "application/pdf":
@@ -274,10 +292,11 @@ def resize_inline_images(mail_id, message, attachments):
         if disposition and "size=" in disposition:
             disposition = re.sub(size_pattern, lambda m: f"{m.group(1)}{at['len']}{m.group(3)}", disposition)
         # Replace the image content in the new message
+        maintype, _, subtype = at["type"].partition("/")
         part.set_content(
             at["content"],
-            maintype=part.get_content_maintype(),
-            subtype=part.get_content_subtype(),
+            maintype=maintype,
+            subtype=subtype,
             disposition=disposition,
             cte="base64",
             cid=part.get("Content-ID"),
@@ -627,7 +646,7 @@ def process_mails():
                 logger.error("Error generating pdf file", exc_info=True)
                 # if 'XDG_SESSION_TYPE=wayland' not in str(pdf_exc):
                 main_file_path = main_file_path.replace(".pdf", ".eml")
-                save_as_eml(main_file_path, parser.message)
+                save_as_eml(main_file_path, message)
             send_to_ws(config, headers, main_file_path, attachments, mail_id)
             if not dev_mode:
                 handler.mark_mail_as_imported(mail_id)

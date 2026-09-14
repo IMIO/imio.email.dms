@@ -46,6 +46,7 @@ setup(
         "zc.lockfile",
         "imio.email.parser",
         "imio.pyutils",
+        "pillow-heif",
         'pathlib2;python_version<"3.0"',
         "requests",
         "six",
