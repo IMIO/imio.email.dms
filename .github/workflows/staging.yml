@@ -24,3 +24,34 @@ jobs:
           REGISTRY_USERNAME: ${{ secrets.DOCS_HARBOR_USERNAME }}
           REGISTRY_PASSWORD: ${{ secrets.DOCS_HARBOR_PASSWORD }}
           MATTERMOST_WEBHOOK_URL: ${{ secrets.DOCS_MATTERMOST_WEBHOOK_URL }}
+  trivy-fs:
+    name: Filesystem scan
+    runs-on:
+      group: self-hosted
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: IMIO/gha/trivy-scan-notify@v8
+        with:
+          SCAN_TYPE: fs
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MATTERMOST_WEBHOOK_URL: ${{ secrets.DOCS_MATTERMOST_WEBHOOK_URL }}
+  # The image scan also covers the buildout eggs, which a filesystem scan of the repo cannot see.
+  trivy-image:
+    name: Image scan
+    needs: build-push
+    runs-on:
+      group: self-hosted
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: IMIO/gha/trivy-scan-notify@v8
+        with:
+          SCAN_TYPE: image
+          IMAGE_REF: ${{ secrets.HARBOR_URL }}/${{ vars.IMAGE_NAME }}:staging-${{ github.run_number }}
+          TRIVY_USERNAME: ${{ secrets.DOCS_HARBOR_USERNAME }}
+          TRIVY_PASSWORD: ${{ secrets.DOCS_HARBOR_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MATTERMOST_WEBHOOK_URL: ${{ secrets.DOCS_MATTERMOST_WEBHOOK_URL }}
