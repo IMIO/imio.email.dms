@@ -35,6 +35,7 @@ jobs:
       - uses: IMIO/gha/trivy-scan-notify@v8
         with:
           SCAN_TYPE: fs
+          TRIVYIGNORES: ''  # no .trivyignore in this repo: the action default would fail
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MATTERMOST_WEBHOOK_URL: ${{ secrets.DOCS_MATTERMOST_WEBHOOK_URL }}
   # The image scan also covers the buildout eggs, which a filesystem scan of the repo cannot see.
@@ -53,5 +54,6 @@ jobs:
           IMAGE_REF: ${{ secrets.HARBOR_URL }}/${{ vars.IMAGE_NAME }}:staging-${{ github.run_number }}
           TRIVY_USERNAME: ${{ secrets.DOCS_HARBOR_USERNAME }}
           TRIVY_PASSWORD: ${{ secrets.DOCS_HARBOR_PASSWORD }}
+          TRIVYIGNORES: ''  # no .trivyignore in this repo: the action default would fail
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MATTERMOST_WEBHOOK_URL: ${{ secrets.DOCS_MATTERMOST_WEBHOOK_URL }}

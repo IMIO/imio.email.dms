@@ -22,5 +22,6 @@ jobs:
           SARIF_CATEGORY: trivy-image-production
           TRIVY_USERNAME: ${{ secrets.DOCS_HARBOR_USERNAME }}
           TRIVY_PASSWORD: ${{ secrets.DOCS_HARBOR_PASSWORD }}
+          TRIVYIGNORES: ''  # no .trivyignore in this repo: the action default would fail
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MATTERMOST_WEBHOOK_URL: ${{ secrets.DOCS_MATTERMOST_WEBHOOK_URL }}
