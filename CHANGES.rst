@@ -6,6 +6,11 @@ Changelog
 
 - Added timestamps to logger, set "Treated no email." to debug log level (DMS-1203).
   [chris-adam]
+- Fixed Trivy CVEs: upgraded Pillow, urllib3, requests, lxml, mail-parser, reportlab and other
+  pinned packages, and installed runtime libraries instead of `-dev` packages in the Docker image.
+  [chris-adam]
+- Moved to Python 3.12 and the Ubuntu 24.04 base image, upgraded zc.buildout to 5.2.0.
+  [chris-adam]
 
 
 0.29.6 (2026-08-05)

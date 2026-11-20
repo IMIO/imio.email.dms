@@ -18,12 +18,22 @@ import configparser
 import email
 import os
 import PyPDF2
+import re
 import tarfile
 import unittest
 
 
 TEST_FILES_PATH = os.path.join(os.path.dirname(__file__), "files")
 EML_TEST_FILES_PATH = os.path.join(os.path.dirname(test_parser.__file__), "files")
+
+
+def unfold(value):
+    """Unfolds headers (RFC 5322 2.2.3): Python 3.12 refolds long headers when writing an eml."""
+    if isinstance(value, dict):
+        return {k: unfold(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [unfold(v) for v in value]
+    return re.sub(r"\r?\n(?=[ \t])", "", value) if isinstance(value, str) else value
 
 
 class TestMain(unittest.TestCase):
@@ -214,7 +224,7 @@ class TestMain(unittest.TestCase):
                 extract=False,
             )
             self.assertEqual(original_mail.parsed_message.body, output_mail.parsed_message.body)
-            self.assertEqual(original_mail.parsed_message.headers, output_mail.parsed_message.headers)
+            self.assertEqual(unfold(original_mail.parsed_message.headers), unfold(output_mail.parsed_message.headers))
             self.assertEqual(original_mail.parsed_message.attachments, output_mail.parsed_message.attachments)
 
     @patch("imio.email.dms.main.dev_mode", True)
