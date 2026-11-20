@@ -24,15 +24,15 @@ FROM harbor.imio.be/common/base:py3-ubuntu-22.04
 ADD https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb /tmp/wkhtmltox.deb
 
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y \
         dumb-init \
         fontconfig \
         ghostscript \
         libjpeg-turbo8 \
-        libjpeg62-dev \
-        libmagic-dev \
+        libjpeg62 \
         libmagic1 \
-        libopenjp2-7-dev \
+        libopenjp2-7 \
         libxext6 \
         libxrender1 \
         xfonts-75dpi \
