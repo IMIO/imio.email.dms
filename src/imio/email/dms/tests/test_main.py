@@ -18,6 +18,7 @@ import configparser
 import email
 import os
 import PyPDF2
+import re
 import tarfile
 import unittest
 
@@ -27,12 +28,12 @@ EML_TEST_FILES_PATH = os.path.join(os.path.dirname(test_parser.__file__), "files
 
 
 def unfold(value):
-    """Removes header folding whitespace: Python 3.12 refolds long headers when writing an eml."""
+    """Unfolds headers (RFC 5322 2.2.3): Python 3.12 refolds long headers when writing an eml."""
     if isinstance(value, dict):
         return {k: unfold(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [unfold(v) for v in value]
-    return " ".join(value.split()) if isinstance(value, str) else value
+    return re.sub(r"\r?\n(?=[ \t])", "", value) if isinstance(value, str) else value
 
 
 class TestMain(unittest.TestCase):

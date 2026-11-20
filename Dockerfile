@@ -17,7 +17,7 @@ RUN pip install --break-system-packages --ignore-installed -r requirements.txt
 COPY --chown=imio src /home/imio/src
 COPY --chown=imio *.cfg *.rst setup.py /home/imio/
 RUN su -c "buildout -c buildout.cfg -t 30 -N" -s /bin/sh imio \
-    && pip uninstall -y --break-system-packages pip  # build tool only, not needed at run time
+    && pip uninstall -y --break-system-packages pip  # keeps the pip installed above out of the dist-packages copied to the final stage
 
 
 FROM harbor.imio.be/common/base:py3-ubuntu-24.04
